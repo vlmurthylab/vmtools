@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use vmtools, please cite it as below."
+title: "vmtools: handy tools for cardiovascular epidemiology"
+type: software
+version: "0.1.0"
+license: GPL-3.0-only
+repository-code: "https://github.com/vlmurthylab/vmtools"
+keywords:
+  - r
+  - epidemiology
+  - cardiovascular-risk
+  - prevent-equations
+  - insulin-resistance
+authors:
+  - family-names: Murthy
+    given-names: Venkatesh L.
+    orcid: "https://orcid.org/0000-0002-7901-1321"
+    affiliation: "University of Michigan"

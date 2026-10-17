@@ -7,12 +7,12 @@
 HMDB_ID_from_name(met.names, max.depth = 25, max.tries = 5)
 }
 \arguments{
+\item{met.names}{vector of strings containing metabolite names}
+
 \item{max.depth}{number indicating how many entries to be checked (may be slightly more than this,
 depending on entries per page)}
 
 \item{max.tries}{number of times to retry loading a page}
-
-\item{met.name}{string containing metabolite name}
 }
 \value{
 string with canonical HMDB ID
@@ -23,8 +23,9 @@ the synonym list as well. Importantly, it takes the *first* match among the name
 and if none, the first match among the synonyms.
 }
 \examples{
-HMDB_ID_from_one_name("valine")
-HMDB_ID_from_one_name("ectoine")
+\dontrun{
+HMDB_ID_from_name("valine")
+HMDB_ID_from_name("ectoine")
 
 test.list <- c("valine-d8","phenylalanine-d8","glycine","alanine","serine","threonine","methionine","glutamate",
 "asparagine","glutamine","histidine","arginine","lysine","valine","leucine","isoleucine","phenylalanine",
@@ -38,5 +39,6 @@ HMDB_ID_from_name(test.list)
 Sys.time() -t0
 
 HMDB_ID_from_name("C5 carnitine")
+}
 }
 \keyword{HMDB}

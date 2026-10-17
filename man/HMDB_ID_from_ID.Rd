@@ -2,14 +2,14 @@
 % Please edit documentation in R/HMDB_ID_from_ID.R
 \name{HMDB_ID_from_ID}
 \alias{HMDB_ID_from_ID}
-\title{Query Human Metabolome Database by metabolite name}
+\title{Query Human Metabolome Database by HMDB ID}
 \usage{
 HMDB_ID_from_ID(ids, max.tries = 5)
 }
 \arguments{
-\item{max.tries}{number of times to retry loading a page}
+\item{ids}{vector of strings with ID starting with "HMDB" or numbers with just the numeric part}
 
-\item{id}{vector of strings with ID starting with "HMDB" or numbers with just the numeric part}
+\item{max.tries}{number of times to retry loading a page}
 }
 \value{
 vector of strings with canonical HMDB IDs
@@ -18,6 +18,7 @@ vector of strings with canonical HMDB IDs
 This function searches the HMDB to find the canonical HMDB ID for a given ID.
 }
 \examples{
+\dontrun{
 HMDB_ID_from_ID(22)
 HMDB_ID_from_ID("HMDB0006022")
 HMDB_ID_from_ID("HMDB1162")
@@ -43,5 +44,6 @@ id.list <- c("Internal Standard","Internal Standard","HMDB00123","HMDB00161","HM
 t0 <- Sys.time()
 HMDB_ID_from_ID(id.list)
 Sys.time() -t0
+}
 }
 \keyword{HMDB}

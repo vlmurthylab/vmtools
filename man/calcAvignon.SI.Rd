@@ -13,15 +13,15 @@ calcAvignon.SI(
 )
 }
 \arguments{
-\item{weight}{in kg}
+\item{insulin.fasting}{fasting insulin in μU/mL}
 
-\item{fasting.insulin}{in μU/mL}
+\item{glucose.fasting}{fasting glucose in mass units (mg/dL)}
 
-\item{fasting.glucose}{in mass units (mg/dL)}
+\item{insulin.2h}{2-hour insulin in μU/mL}
 
-\item{2h.insulin}{in μU/mL}
+\item{glucose.2h}{2-hour glucose in mass units (mg/dL)}
 
-\item{2h.glucose}{in mass units (mg/dL)}
+\item{weight}{body weight in kg}
 }
 \value{
 Avignon SI.b, SI.2h and SI.m as numeric value
@@ -39,7 +39,7 @@ insulin.fasting.vals <- seq(2,20, by=1)
 glucose.2h.vals <- seq(75,175,by=25)
 insulin.2h.vals <- seq(2,20, by=1)
 weight.vals <- seq(50,90,by=10)
-test.dat <- expand.grid(insulin.fasting=insulin.vals,glucose.fasting=glucose.vals,
+test.dat <- expand.grid(insulin.fasting=insulin.fasting.vals,glucose.fasting=glucose.fasting.vals,
                         insulin.2h=insulin.2h.vals,glucose.2h=glucose.2h.vals,weight=weight.vals)
 
 test.dat <- cbind(test.dat,calcAvignon.SI(insulin.fasting=test.dat$insulin.fasting,

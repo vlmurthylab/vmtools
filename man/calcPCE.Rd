@@ -21,7 +21,7 @@ calcPCE(
   bptx.true = c(1, "t", "true", "y", "yes"),
   bptx.false = c(0, "f", "false", "n", "no"),
   smoking.true = c(1, "t", "true", "y", "yes", "active"),
-  smoking.false = c(0, "f", "false", "former", "non-smoker", "nonsmoker"),
+  smoking.false = c(0, "f", "false", "n", "no", "former", "non-smoker", "nonsmoker"),
   dm.true = c(1, "t", "true", "y", "yes"),
   dm.false = c(0, "f", "false", "n", "no")
 )
@@ -70,7 +70,7 @@ PCE risk as numeric from 0 to 1
 }
 \description{
 This function calculates Pooled Cohorts Equations risk scores per prior ACC/AHA recommendations.
-Reference: Goff DC, et al. Circulation 2014;19:S49-S73
+Reference: Goff DC, et al. Circulation 2014;129:S49-S73
 DOI: 10.1161/01.cir.0000437741.48606.98
 }
 \examples{

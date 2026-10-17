@@ -1,5 +1,7 @@
 # vmtools
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23440812.svg)](https://doi.org/10.5281/zenodo.23440812)
+
 R helpers for cardiovascular epidemiology from the [Murthy Lab](https://murthylab.org) at the University of Michigan.
 
 ## Installation
@@ -61,7 +63,7 @@ The test suite in `tests/testthat` checks the PCE against the worked example in 
 
 ## Citation
 
-See [`CITATION.cff`](CITATION.cff), or use GitHub's "Cite this repository" button.
+vmtools is archived on Zenodo with DOI [10.5281/zenodo.23440812](https://doi.org/10.5281/zenodo.23440812). See [`CITATION.cff`](CITATION.cff), or use GitHub's "Cite this repository" button.
 
 ## License
 

@@ -1,8 +1,8 @@
 #' Calculate HOMA-β
 #'
 #' This function calculates Homeostatic Model Assessment β-cell function
-#' Reference: Matthews DR, et al. Diabetologia 1995;28:412-9
-#' DOI: 10.1007%2FBF00280883
+#' Reference: Matthews DR, et al. Diabetologia 1985;28:412-9
+#' DOI: 10.1007/BF00280883
 #' @param insulin in μU/mL
 #' @param glucose in mass units (mg/dL)
 #' @return HOMA-β cell function as percentage value

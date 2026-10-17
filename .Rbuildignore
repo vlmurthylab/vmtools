@@ -1,2 +1,5 @@
+^\.github$
+^CITATION\.cff$
+^README\.md$
 ^.*\.Rproj$
 ^\.Rproj\.user$

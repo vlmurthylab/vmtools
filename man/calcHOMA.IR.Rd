@@ -16,8 +16,8 @@ HOMA-IR as numeric value
 }
 \description{
 This function calculates Homeostatic Model Assessment Insulin Resistance
-Reference: Matthews DR, et al. Diabetologia 1995;28:412-9
-DOI: 10.1007%2FBF00280883
+Reference: Matthews DR, et al. Diabetologia 1985;28:412-9
+DOI: 10.1007/BF00280883
 }
 \examples{
 calcHOMA.IR(15.0,100.0)

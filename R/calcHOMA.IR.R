@@ -1,8 +1,8 @@
 #' Calculate HOMA-IR
 #'
 #' This function calculates Homeostatic Model Assessment Insulin Resistance
-#' Reference: Matthews DR, et al. Diabetologia 1995;28:412-9
-#' DOI: 10.1007%2FBF00280883
+#' Reference: Matthews DR, et al. Diabetologia 1985;28:412-9
+#' DOI: 10.1007/BF00280883
 #' @param insulin in μU/mL
 #' @param glucose in mass units (mg/dL)
 #' @return HOMA-IR as numeric value

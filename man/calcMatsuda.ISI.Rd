@@ -30,11 +30,11 @@ glucose.fasting.vals <- seq(75,175,by=25)
 insulin.fasting.vals <- seq(2,20, by=1)
 glucose.mean.vals <- seq(75,175,by=25)
 insulin.mean.vals <- seq(2,20, by=1)
-test.dat <- expand.grid(insulin.fasting=insulin.vals,glucose.fasting=glucose.vals,
+test.dat <- expand.grid(insulin.fasting=insulin.fasting.vals,glucose.fasting=glucose.fasting.vals,
                         insulin.mean=insulin.mean.vals,glucose.mean=glucose.mean.vals)
 
 test.dat$Matsuda.ISI <- calcMatsuda.ISI(insulin.fasting=test.dat$insulin.fasting,
-                                        glucose.fasting=test.dat$fastingglucose,
+                                        glucose.fasting=test.dat$glucose.fasting,
                                         insulin.mean=test.dat$insulin.mean,
                                         glucose.mean=test.dat$glucose.mean)
 }

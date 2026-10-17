@@ -8,17 +8,17 @@
 #' @return returns result of qsave call from qs module
 #' @keywords serialization fast save
 #' @examples
-#' calcHOMA.IR(15.0,100.0)
-#'
+#' \dontrun{
 #' test.data <- data.frame(var1=rnorm(1000), var2=rnorm(1000))
 #' mqsave(objects="test.data",fname="test.qs")
 #' rm(test.data)
 #' mqread(fname="test.qs")
+#' }
 #' @export
 
 mqsave <- function(objects, fname, ...) {
   # Package all objects into a list
-  object.list <- lapply(objects, get)
+  object.list <- lapply(objects, get, envir = parent.frame())
   names(object.list) <- objects
 
   # Call qsave

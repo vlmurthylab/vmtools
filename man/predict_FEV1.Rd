@@ -11,7 +11,9 @@ predict_FEV1(age, height, race, sex, fev1 = NA)
 
 \item{height}{height in centimeters}
 
-\item{race}{1=African American (AA), 2=North East Asian (NEA), 3=South East Asian (SEA) or 4=other (O)}
+\item{race}{GLI-2012 ethnic group, case-insensitive: 0=Caucasian ("c", "caucasian", "w", "white"),
+1=African American ("aa", "african-american"), 2=North East Asian ("nea"), 3=South East Asian ("sea")
+or 4=other/mixed ("o", "other"). Unrecognized values return NA with a warning.}
 
 \item{sex}{0=female/1=male}
 
@@ -24,13 +26,18 @@ Z-score (if fev1 is provided), percent predicted FEV1 (if fev1 is provided)
 \description{
 This function computes predicted FEV1 from the ERS Global Lung Initiative function (Eur Resp J 2012 40:1324-43)
 }
+\details{
+The GLI-2012 age splines are approximated by fifth-order polynomials in age/100, valid for ages 25-95.
+These agree with the official GLI-2012 lookup tables to within 0.5\% (see tests/testthat/test-spirometry.R).
+TODO: cite the published source of the polynomial coefficients.
+}
 \examples{
 
-age <- c(4.8, 12.2, 53, 39.1)
-height <- c(107, 152, 175, 165)
-race <- c("o", "aa", "SEA", "SEA")
+age <- c(30, 61.5, 53, 39.1)
+height <- c(180, 152, 175, 165)
+race <- c("caucasian", "aa", "SEA", "o")
 sex <- c("M", "M", "M", "F")
-fev1 <- c(0.8, 2.405, 2.410, 2.210)
+fev1 <- c(4.1, 2.405, 2.410, 2.210)
 
 predict_FEV1(age, height, race, sex, fev1)
 

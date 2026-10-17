@@ -1,7 +1,7 @@
 #' Calculate Pooled Cohorts Equations risk scores
 #'
 #' This function calculates Pooled Cohorts Equations risk scores per prior ACC/AHA recommendations.
-#' Reference: Goff DC, et al. Circulation 2014;19:S49-S73
+#' Reference: Goff DC, et al. Circulation 2014;129:S49-S73
 #' DOI: 10.1161/01.cir.0000437741.48606.98
 #' @param age age in years
 #' @param race white (non-black) vs. black
@@ -44,7 +44,7 @@ calcPCE <- function(age, race, sex, tc, hdl, sbp, bptx, smoking, dm, white=c(0,"
                     black=c(1,"b","black"), female=c(0,"f","female"),male=c(1,"m","male"),
                     bptx.true=c(1,"t","true","y","yes"), bptx.false=c(0,"f","false","n","no"),
                     smoking.true=c(1,"t","true","y","yes","active"),
-                    smoking.false=c(0,"f","false","former","non-smoker","nonsmoker"),
+                    smoking.false=c(0,"f","false","n","no","former","non-smoker","nonsmoker"),
                     dm.true=c(1,"t","true","y","yes"),dm.false=c(0,"f","false","n","no")) {
 
 

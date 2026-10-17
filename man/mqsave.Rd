@@ -20,12 +20,12 @@ returns result of qsave call from qs module
 This function wraps multiple objects into a list to allow saving using qs
 }
 \examples{
-calcHOMA.IR(15.0,100.0)
-
+\dontrun{
 test.data <- data.frame(var1=rnorm(1000), var2=rnorm(1000))
 mqsave(objects="test.data",fname="test.qs")
 rm(test.data)
 mqread(fname="test.qs")
+}
 }
 \keyword{fast}
 \keyword{save}

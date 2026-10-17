@@ -7,25 +7,23 @@
 mqread(fname, ...)
 }
 \arguments{
-\item{fname}{filename}
+\item{fname}{filename of a file written by mqsave}
 
-\item{...}{additional parameters passed to qsave}
-
-\item{objects}{vector containing names of objects to save}
+\item{...}{additional parameters passed to qs::qread}
 }
 \value{
-returns result of qsave call from qs module
+called for its side effect of restoring the saved objects into the calling environment
 }
 \description{
 This reads output of mqsave which wraps objects in a list to allow saving multiple objects using qs
 }
 \examples{
-calcHOMA.IR(15.0,100.0)
-
+\dontrun{
 test.data <- data.frame(var1=rnorm(1000), var2=rnorm(1000))
 mqsave(objects="test.data",fname="test.qs")
 rm(test.data)
 mqread(fname="test.qs")
+}
 }
 \keyword{fast}
 \keyword{save}

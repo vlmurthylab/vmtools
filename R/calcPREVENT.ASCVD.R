@@ -1,7 +1,7 @@
 #' Calculate PREVENT 10 year ASCVD risk scores
 #'
 #' This function calculates PREVENT 10 year ASCVD risk scores per recent AHA recommendations.
-#' Reference: Khan SS, et al. Circulation 2023 online ahead of print
+#' Reference: Khan SS, et al. Circulation 2024;149:430-449
 #' DOI: https://doi.org/10.1161/CIRCULATIONAHA.123.067626
 #' @param age age in years
 #' @param sex 0=female/1=male
@@ -46,7 +46,7 @@ calcPREVENT.ASCVD <- function(age, sex, tc, hdl, sbp, bptx, smoking, dm, statin,
                               female=c(0,"f","female"),male=c(1,"m","male"),
                               bptx.true=c(1,"t","true","y","yes"), bptx.false=c(0,"f","false","n","no"),
                               smoking.true=c(1,"t","true","y","yes","active"),
-                              smoking.false=c(0,"f","false","former","non-smoker","nonsmoker"),
+                              smoking.false=c(0,"f","false","n","no","former","non-smoker","nonsmoker"),
                               dm.true=c(1,"t","true","y","yes"),dm.false=c(0,"f","false","n","no"),
                               statin.true=c(1,"t","true","y","yes"),statin.false=c(0,"f","false","n","no")) {
 

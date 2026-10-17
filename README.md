@@ -67,4 +67,4 @@ vmtools is archived on Zenodo. To cite a specific version, use its DOI (v0.1.0: 
 
 ## License
 
-GPL-3
+vmtools is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [`LICENSE`](LICENSE).

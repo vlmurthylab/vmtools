@@ -12,8 +12,8 @@ test_that("PCE reproduces the Goff 2013 worked example (55 y, TC 213, HDL 50, SB
 })
 
 # PREVENT example: 50 y, SBP 160 on treatment, TC 200, HDL 45, diabetes, non-smoker,
-# no statin, eGFR 90, BMI 35. Expected 10-year risks are those reported by the
-# preventr package's test suite, which mirrors the AHA PREVENT calculator.
+# no statin, eGFR 90, BMI 35. Expected 10-year risks are the values in the
+# preventr package's test suite (tests/testthat/test-estimate_risk.R, preventr 0.12.1).
 test_that("PREVENT total CVD matches reference values", {
   expect_equal(round(calcPREVENT.totalCVD(50, "female", 200, 45, 160, 1, 0, 1, 0, 90), 3), 0.147)
   expect_equal(round(calcPREVENT.totalCVD(50, "male",   200, 45, 160, 1, 0, 1, 0, 90), 3), 0.163)

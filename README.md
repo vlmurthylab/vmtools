@@ -57,7 +57,7 @@ calcHOMA.IR(insulin = 10, glucose = 100)
 
 ## Validation
 
-The test suite in `tests/testthat` checks the risk equations against published worked examples (Goff 2013 Table A; the AHA PREVENT calculator) and the spirometry functions against the official GLI-2012 lookup tables.
+The test suite in `tests/testthat` checks the PCE against the worked example in Goff 2013 (Table A), the PREVENT equations against the reference values in the [preventr](https://github.com/martingmayer/preventr) package's test suite, and the spirometry functions against the official GLI-2012 lookup tables.
 
 ## Citation
 

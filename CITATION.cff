@@ -3,6 +3,8 @@ message: "If you use vmtools, please cite it as below."
 title: "vmtools: handy tools for cardiovascular epidemiology"
 type: software
 version: "0.1.0"
+doi: "10.5281/zenodo.23440812"
+date-released: "2026-10-17"
 license: GPL-3.0-only
 repository-code: "https://github.com/vlmurthylab/vmtools"
 keywords:

@@ -1,12 +1,13 @@
-#' Query Human Metabolome Database by metabolite name
+#' Query Human Metabolome Database by HMDB ID
 #'
 #' This function searches the HMDB to find the canonical HMDB ID for a given ID.
 #'
-#' @param id vector of strings with ID starting with "HMDB" or numbers with just the numeric part
+#' @param ids vector of strings with ID starting with "HMDB" or numbers with just the numeric part
 #' @param max.tries number of times to retry loading a page
 #' @return vector of strings with canonical HMDB IDs
 #' @keywords HMDB
 #' @examples
+#' \dontrun{
 #' HMDB_ID_from_ID(22)
 #' HMDB_ID_from_ID("HMDB0006022")
 #' HMDB_ID_from_ID("HMDB1162")
@@ -32,6 +33,7 @@
 #' t0 <- Sys.time()
 #' HMDB_ID_from_ID(id.list)
 #' Sys.time() -t0
+#' }
 #' @export
 
 HMDB_ID_from_ID <- function(ids,max.tries=5) {

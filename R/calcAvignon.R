@@ -3,11 +3,11 @@
 #' This function calculates Avignon insulin sensitivity index from 2 hour oral glucose tolerance test
 #' Reference: Avignon A, et al. International Journal of Obesity 1999; 23:512-7
 #' DOI: 10.1038/sj.ijo.0800864
-#' @param fasting.insulin in μU/mL
-#' @param fasting.glucose in mass units (mg/dL)
-#' @param 2h.insulin in μU/mL
-#' @param 2h.glucose in mass units (mg/dL)
-#' @param weight in kg
+#' @param insulin.fasting fasting insulin in μU/mL
+#' @param glucose.fasting fasting glucose in mass units (mg/dL)
+#' @param insulin.2h 2-hour insulin in μU/mL
+#' @param glucose.2h 2-hour glucose in mass units (mg/dL)
+#' @param weight body weight in kg
 #' @return Avignon SI.b, SI.2h and SI.m as numeric value
 #' @keywords Avignon SI.b
 #' @examples
@@ -18,7 +18,7 @@
 #' glucose.2h.vals <- seq(75,175,by=25)
 #' insulin.2h.vals <- seq(2,20, by=1)
 #' weight.vals <- seq(50,90,by=10)
-#' test.dat <- expand.grid(insulin.fasting=insulin.vals,glucose.fasting=glucose.vals,
+#' test.dat <- expand.grid(insulin.fasting=insulin.fasting.vals,glucose.fasting=glucose.fasting.vals,
 #'                         insulin.2h=insulin.2h.vals,glucose.2h=glucose.2h.vals,weight=weight.vals)
 #'
 #' test.dat <- cbind(test.dat,calcAvignon.SI(insulin.fasting=test.dat$insulin.fasting,
@@ -30,9 +30,9 @@
 
 calcAvignon.SI <- function(insulin.fasting,glucose.fasting,insulin.2h,glucose.2h,weight) {
   VD <- 150 * weight
-  Avignon.SI.b <- 1e8 / (insulin.fasting * glucose.fasting * VD)
-  Avignon.SI.2h <- 1e8 / (insulin.2h * glucose.2h * VD)
-  Avignon.SI.m <- ((0.137*SI.b) + SI.2h)/2
+  SI.b <- 1e8 / (insulin.fasting * glucose.fasting * VD)
+  SI.2h <- 1e8 / (insulin.2h * glucose.2h * VD)
+  SI.m <- ((0.137*SI.b) + SI.2h)/2
 
   return(data.frame(SI.b,SI.2h,SI.m))
 }

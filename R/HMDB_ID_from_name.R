@@ -4,15 +4,16 @@
 #' the synonym list as well. Importantly, it takes the *first* match among the names returned by the HMDB search engine
 #' and if none, the first match among the synonyms.
 #'
-#' @param met.name string containing metabolite name
+#' @param met.names vector of strings containing metabolite names
 #' @param max.depth number indicating how many entries to be checked (may be slightly more than this,
 #' depending on entries per page)
 #' @param max.tries number of times to retry loading a page
 #' @return string with canonical HMDB ID
 #' @keywords HMDB
 #' @examples
-#' HMDB_ID_from_one_name("valine")
-#' HMDB_ID_from_one_name("ectoine")
+#' \dontrun{
+#' HMDB_ID_from_name("valine")
+#' HMDB_ID_from_name("ectoine")
 #'
 #' test.list <- c("valine-d8","phenylalanine-d8","glycine","alanine","serine","threonine","methionine","glutamate",
 #' "asparagine","glutamine","histidine","arginine","lysine","valine","leucine","isoleucine","phenylalanine",
@@ -26,6 +27,7 @@
 #' Sys.time() -t0
 #'
 #' HMDB_ID_from_name("C5 carnitine")
+#' }
 #' @export
 
 HMDB_ID_from_name <- function(met.names,max.depth=25,max.tries=5) {
@@ -66,7 +68,7 @@ HMDB_ID_from_name <- function(met.names,max.depth=25,max.tries=5) {
     # Manage old school lipid names
     if (grepl("^C[0-9]{2}:[0-9] +(MAG|DAG|TAG|LPC|LPE|PC|PE)$",x)) {
       sat <- substr(x,2,5)
-      class <- str_split(x," ")[[1]][2]
+      class <- strsplit(x," ")[[1]][2]
       class <- case_when(class=="MAG" ~ "MG",
                          class=="DAG" ~ "DG",
                          class=="TAG" ~ "TG",
@@ -75,8 +77,8 @@ HMDB_ID_from_name <- function(met.names,max.depth=25,max.tries=5) {
     } else if (grepl("^C[0-9]{2}:[0-9] +ceramide",x)) {
       sat <- substr(x,2,5)
       if (grepl("(d[0-9]{2}:[-9])$",x)) {
-        cer.sat <- str_split(x,"\\(")[[1]][length(str_split(x,"\\(")[[1]])]
-        cer.sat <- substr(cer.sat,0,str_length(cer.sat)-1)
+        cer.sat <- strsplit(x,"\\(")[[1]][length(strsplit(x,"\\(")[[1]])]
+        cer.sat <- substr(cer.sat,0,nchar(cer.sat)-1)
       } else {
         cer.sat <- "d18:1"
       }
@@ -84,18 +86,18 @@ HMDB_ID_from_name <- function(met.names,max.depth=25,max.tries=5) {
     } else if (grepl("^C[0-9]{2}:[0-9] +SM",x)) {
       sat <- substr(x,2,5)
       if (grepl("(d[0-9]{2}:[-9])$",x)) {
-        sm.sat <- str_split(x,"\\(")[[1]][length(str_split(x,"\\(")[[1]])]
-        sm.sat <- substr(sm.sat,0,str_length(sm.sat)-1)
+        sm.sat <- strsplit(x,"\\(")[[1]][length(strsplit(x,"\\(")[[1]])]
+        sm.sat <- substr(sm.sat,0,nchar(sm.sat)-1)
       } else {
         sm.sat <- "d18:1"
       }
       x <- sprintf("SM(%s/%s)",sm.sat,sat)
     } else if (grepl("^C[0-9]{2}:[0-9] +(PC|PE)+ plasmalogen$",x)) {
       sat2 <- substr(x,2,5)
-      sat1 <- as.numeric(str_split(sat2,":")[[1]])
+      sat1 <- as.numeric(strsplit(sat2,":")[[1]])
       sat1[2] <- sat1[2] - 1
       sat1 <- sprintf("%s:%s",sat1[1],sat1[2])
-      class <- str_split(x," ")[[1]][2]
+      class <- strsplit(x," ")[[1]][2]
       x <- sprintf("%s(P-%s)/%s(O-%s)",class,sat1,class,sat2)
     }
 
@@ -106,7 +108,7 @@ HMDB_ID_from_name <- function(met.names,max.depth=25,max.tries=5) {
 
     # Keep looking up entries while not found and max depth of parsing not exceeded
     while (!found.id & ids.checked<=max.depth) {
-      u <- sprintf(search.url,search.page,URLencode(tolower(x),reserved=TRUE))
+      u <- sprintf(search.url,search.page,utils::URLencode(tolower(x),reserved=TRUE))
 
       # Repeatedly try to read a specific page until success
       pause.length <- 5

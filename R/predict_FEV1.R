@@ -1,120 +1,93 @@
-#' Predict FEV1 based on Global Lungs Initiative
+#' Predict FEV1 from the Global Lung Function Initiative (GLI) equations
 #'
-#' This function computes predicted FEV1 from the ERS Global Lung Initiative function (Eur Resp J 2012 40:1324-43)
+#' Computes predicted FEV1, its lower limit of normal (LLN), and, if a measured value is given,
+#' percent predicted and Z-score, from either the race-specific GLI-2012 equations
+#' (Quanjer PH, et al. Eur Respir J 2012;40:1324-43) or the race-neutral GLI Global equations
+#' (Bowerman C, et al. Am J Respir Crit Care Med 2023;207:768-74; coefficients from its online supplement,
+#' Table E2, and the official GLI Global lookup tables). Valid for ages 3-95.
 #'
-#' The GLI-2012 age splines are approximated by fifth-order polynomials in age/100, valid for ages 25-95.
-#' These agree with the official GLI-2012 lookup tables to within 0.5\% (see tests/testthat/test-spirometry.R).
-#' TODO: cite the published source of the polynomial coefficients.
+#' @section Default equations may change:
+#' \strong{The default, \code{equations = "GLI-2012"} (race-specific), is kept for backward compatibility
+#' and may change to \code{"GLI-Global"} (race-neutral) in a future major version of vmtools.}
+#' Current ATS guidance favors race-neutral interpretation. For new analyses, always set
+#' \code{equations} explicitly so your results do not change if the default does.
 #'
-#' @param age age in years (ages 25-95)
+#' @section Equations:
+#' \describe{
+#'   \item{\code{"GLI-2012"}}{Race-specific equations. \code{race} is required; missing or unknown
+#'     race gives \code{NA} with a warning.}
+#'   \item{\code{"GLI-Global"}}{Race-neutral equations. \code{race} is not used (a warning is given
+#'     if it is supplied).}
+#'   \item{\code{"auto"}}{GLI-2012 where race is known and GLI Global where race is missing or
+#'     \code{"unknown"}. Check the \code{equations} column of the result: a dataset processed this
+#'     way uses two reference systems.}
+#' }
+#'
+#' @section Methods:
+#' GLI defines the age dependence of M and S (the "splines") through lookup tables at 0.25-year
+#' intervals, with linear interpolation between them. Two methods are offered:
+#' \describe{
+#'   \item{\code{"lookup"} (default)}{GLI's method: the official lookup tables with linear
+#'     interpolation. Exact GLI values. The tables are listed in \code{data-raw/} in the package source.}
+#'   \item{\code{"polynomial"}}{Closed-form formulas: three fifth-order polynomials in (age/100) - the
+#'     form the GLI memo "Implementing GLI 2012 lung function regression equations" (19 July 2015) uses
+#'     for adults - on ages 3-12, 12-25 and 25-95, fitted (minimax) to the official tables and joined with
+#'     equal value and slope at ages 12 and 25. Useful when the same calculation must be reproduced in
+#'     other software. Compared with the lookup method at every 0.25-year age from 3 to 95, predicted
+#'     values and LLNs differ by less than 0.1\% on average (at most about 0.45\%), and Z-scores by less
+#'     than 0.005 on average (at most about 0.035). Coefficients are in \code{R/gli_coefficients.R}.}
+#' }
+#'
+#' @param age age in years (3-95); outside this range the result is \code{NA}
 #' @param height height in centimeters
-#' @param race GLI-2012 ethnic group, case-insensitive: 0=Caucasian ("c", "caucasian", "w", "white"),
-#' 1=African American ("aa", "african-american"), 2=North East Asian ("nea"), 3=South East Asian ("sea")
-#' or 4=other/mixed ("o", "other"). Unrecognized values return NA with a warning.
-#' @param sex 0=female/1=male
-#' @param fev1 measured FEV1 (optional). If provided, Z-score and percent predicted will be computed
-#' @return vector of predicted FEV1, coefficient of variation, skewness, lower limit normal,
-#' Z-score (if fev1 is provided), percent predicted FEV1 (if fev1 is provided)
-#' @keywords FEV1
+#' @param race GLI-2012 ethnic group, case-insensitive: 0 = Caucasian ("c", "caucasian", "w", "white"),
+#' 1 = African American ("aa", "african-american", "black"), 2 = North East Asian ("nea"),
+#' 3 = South East Asian ("sea"), 4 = Other/mixed ("o", "other", "mixed"). \code{NA} or "unknown" means
+#' unknown. Not used with \code{equations = "GLI-Global"}.
+#' @param sex 0/"f"/"female" or 1/"m"/"male"; other values give \code{NA}
+#' @param fev1 measured FEV1 in liters (optional). If provided, percent predicted and Z-score are computed
+#' @param equations \code{"GLI-2012"} (default; see the section on defaults), \code{"GLI-Global"} or \code{"auto"}
+#' @param method \code{"lookup"} (default; official GLI lookup tables with linear interpolation) or
+#' \code{"polynomial"} (fitted closed-form formulas; see the Methods section)
+#' @return data frame with predicted FEV1 (\code{fev1_pred}), coefficient of variation (\code{cv}),
+#' skewness (\code{skew}), lower limit of normal (\code{fev1_lln}), percent predicted (\code{fev1_pct_pred}),
+#' Z-score (\code{fev1_Z}) and the equations used for each row (\code{equations})
+#' @keywords FEV1 spirometry GLI
 #' @examples
+#' # GLI-2012 (race-specific); always state the equations explicitly
+#' predict_FEV1(age = c(4.8, 12.2, 53, 39.1), height = c(107, 152, 175, 165),
+#'              race = c("caucasian", "aa", "sea", "other"), sex = c("M", "M", "M", "F"),
+#'              fev1 = c(0.800, 2.405, 2.410, 2.210), equations = "GLI-2012")
 #'
-#' age <- c(30, 61.5, 53, 39.1)
-#' height <- c(180, 152, 175, 165)
-#' race <- c("caucasian", "aa", "SEA", "o")
-#' sex <- c("M", "M", "M", "F")
-#' fev1 <- c(4.1, 2.405, 2.410, 2.210)
+#' # GLI Global (race-neutral)
+#' predict_FEV1(age = 39.1, height = 165, sex = "F", fev1 = 2.21, equations = "GLI-Global")
+#' predict_FEV1_gliglobal(age = 39.1, height = 165, sex = "F", fev1 = 2.21)
 #'
-#' predict_FEV1(age, height, race, sex, fev1)
+#' # Shortcut that always uses GLI-2012, whatever the default
+#' predict_FEV1_gli2012(age = 39.1, height = 165, race = "sea", sex = "F", fev1 = 2.21)
 #'
+#' # Closed-form polynomial version (for reproducing in other software)
+#' predict_FEV1(age = 39.1, height = 165, sex = "F", fev1 = 2.21, equations = "GLI-Global", method = "polynomial")
+#'
+#' # auto: GLI-2012 where race is known, GLI Global where it is not
+#' predict_FEV1(age = c(40, 40), height = 175, race = c("caucasian", NA), sex = "M", equations = "auto")
 #' @export
 
+predict_FEV1 <- function(age, height, race = NULL, sex, fev1 = NA, equations = "GLI-2012", method = "lookup") {
+  .gli_predict("FEV1", age, height, race, sex, fev1, equations, method)
+}
 
-predict_FEV1 <- function(age, height, race, sex, fev1=NA) {
+#' @describeIn predict_FEV1 Race-specific GLI-2012; same as \code{equations = "GLI-2012"}, but unaffected by any
+#' future change of default. \code{race} is required.
+#' @export
 
-  # Make sure length of all variables are equal
-  stopifnot(all(sapply(list(age, height, race), function(x) length(x) == length(sex))))
-  stopifnot(all(is.na(fev1)) | (length(fev1)==length(age)))
+predict_FEV1_gli2012 <- function(age, height, race, sex, fev1 = NA, method = "lookup") {
+  .gli_predict("FEV1", age, height, race, sex, fev1, "GLI-2012", method)
+}
 
-  # Check if age is in the right range
-  age <- ifelse(age <25 | age >95, NA, age)
-  female <- ifelse(tolower(as.character(sex)) %in% c("0","f","female"),TRUE,FALSE)
+#' @describeIn predict_FEV1 Race-neutral GLI Global; same as \code{equations = "GLI-Global"}.
+#' @export
 
-  # Ethnic group; Caucasian is the GLI reference group (all indicators 0)
-  race_key <- tolower(as.character(race))
-  known_race <- race_key %in% c("0","c","caucasian","w","white","1","aa","african-american",
-                                "2","nea","n east asian","3","sea","s east asian","4","o","other")
-  if (any(!known_race & !is.na(race))) warning("Unrecognized race values set to NA: ",
-                                               paste(unique(race[!known_race & !is.na(race)]), collapse=", "))
-  age[!known_race] <- NA
-
-  # Set up matrix of x-variables
-  x_mat <- data.frame(intercept=1,
-                      ln_height=log(height),
-                      ln_age=log(age),
-                      aa=ifelse(tolower(as.character(race)) %in% c("1","aa","african-american"),1,0),
-                      nea=ifelse(tolower(as.character(race)) %in% c("2","nea","n east asian"),1,0),
-                      sea=ifelse(tolower(as.character(race)) %in% c("3","sea","s east asian"),1,0),
-                      o=ifelse(tolower(as.character(race)) %in% c("4","o","other"),1,0),
-                      age.ge.25=ifelse(age>=25,1,0),
-                      spline.age1=ifelse(age>=25,age/100,0),
-                      spline.age2=ifelse(age>=25,(age/100)^2,0),
-                      spline.age3=ifelse(age>=25,(age/100)^3,0),
-                      spline.age4=ifelse(age>=25,(age/100)^4,0),
-                      spline.age5=ifelse(age>=25,(age/100)^5,0)) |> as.matrix()
-
-  # Set up matrix for M coefficients
-  m_coef_mat <- data.frame(intercept=ifelse(female,-9.6987,-10.3420),
-                           ln_height=ifelse(female,2.1211,2.2196),
-                           ln_age=ifelse(female,-0.0270,0.0574),
-                           aa=ifelse(female,-0.1484,-0.1589),
-                           nea=ifelse(female,-0.0149,-0.0351),
-                           sea=ifelse(female,-0.1208,-0.0881),
-                           o=ifelse(female,-0.0708,-0.0708),
-                           age.ge.25=ifelse(female,0.0552,0.3901),
-                           spline.age1=ifelse(female,1.6032,-1.0579),
-                           spline.age2=ifelse(female,-6.4855,1.4743),
-                           spline.age3=ifelse(female,10.2741,-2.1077),
-                           spline.age4=ifelse(female,-9.8646,-0.1215),
-                           spline.age5=ifelse(female,3.8808,0.8873)) |> as.matrix()
-
-  # Set up matrix for S coefficients
-  s_coef_mat <- data.frame(intercept=ifelse(female,-2.3765,-2.3268),
-                           ln_height=ifelse(female,0,0),
-                           ln_age=ifelse(female,0.0972,0.0798),
-                           aa=ifelse(female,0.1016,0.1096),
-                           nea=ifelse(female,-0.0109,-0.3973),
-                           sea=ifelse(female,0.0733,0.0327),
-                           o=ifelse(female,0.0114,0.0114),
-                           age.ge.25=ifelse(female,-0.0825,-1.6902),
-                           spline.age1=ifelse(female,1.4104,17.0986),
-                           spline.age2=ifelse(female,-11.2699,-68.1649),
-                           spline.age3=ifelse(female,29.4400,127.1964),
-                           spline.age4=ifelse(female,-29.5505,-109.6777),
-                           spline.age5=ifelse(female,10.4405,35.6832)) |> as.matrix()
-
-  # Set up matrix for L coefficients
-  l_coef_mat <- data.frame(intercept=ifelse(female,1.1540,0.8866),
-                           ln_height=ifelse(female,0,0),
-                           ln_age=ifelse(female,0,0.0850),
-                           aa=ifelse(female,0,0),
-                           nea=ifelse(female,0,0),
-                           sea=ifelse(female,0,0),
-                           o=ifelse(female,0,0),
-                           age.ge.25=ifelse(female,0,0),
-                           spline.age1=ifelse(female,0,0),
-                           spline.age2=ifelse(female,0,0),
-                           spline.age3=ifelse(female,0,0),
-                           spline.age4=ifelse(female,0,0),
-                           spline.age5=ifelse(female,0,0))
-
-  # Compute M, S, L, LLN, percent predicted, Z-score
-  M <- exp(rowSums(x_mat * m_coef_mat))
-  S <- exp(rowSums(x_mat * s_coef_mat))
-  L <- rowSums(x_mat * l_coef_mat)
-  LLN <- exp(log(1-1.644*L*S)/L + log(M))
-  pct_pred <- (fev1/M) * 100
-  Z <-((fev1/M)^L -1)/(L*S)
-
-  # Data frame for return
-  data.frame(fev1_pred=M, cv=S, skew=L, fev1_lln=LLN, fev1_pct_pred=pct_pred, fev1_Z=Z)
+predict_FEV1_gliglobal <- function(age, height, sex, fev1 = NA, method = "lookup") {
+  .gli_predict("FEV1", age, height, NULL, sex, fev1, "GLI-Global", method)
 }

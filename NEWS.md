@@ -1,4 +1,4 @@
-# vmtools 0.1.0.9000 (development version)
+# vmtools 0.2.0
 
 ## GLI spirometry equations
 

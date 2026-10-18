@@ -1,7 +1,7 @@
 Package: vmtools
 Type: Package
 Title: Venk Murthy's Handy Tools
-Version: 0.1.0.9000
+Version: 0.2.0
 Author: Venkatesh L. Murthy
 Maintainer: Venkatesh L. Murthy <venkmurthy@gmail.com>
 Description: Handy tools for cardiovascular epidemiology, including the PREVENT

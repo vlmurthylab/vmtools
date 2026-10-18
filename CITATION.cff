@@ -2,16 +2,13 @@ cff-version: 1.2.0
 message: "If you use vmtools, please cite it as below."
 title: "vmtools: handy tools for cardiovascular epidemiology"
 type: software
-version: "0.1.0"
-doi: "10.5281/zenodo.23440812"
+version: "0.2.0"
+doi: "10.5281/zenodo.23440811"
 identifiers:
-  - type: doi
-    value: "10.5281/zenodo.23440812"
-    description: "DOI for this version (v0.1.0)"
   - type: doi
     value: "10.5281/zenodo.23440811"
     description: "Concept DOI for all versions; resolves to the latest release"
-date-released: "2026-10-17"
+date-released: "2026-10-18"
 license: GPL-3.0-only
 repository-code: "https://github.com/vlmurthylab/vmtools"
 keywords:
@@ -20,6 +17,7 @@ keywords:
   - cardiovascular-risk
   - prevent-equations
   - insulin-resistance
+  - spirometry
 authors:
   - family-names: Murthy
     given-names: Venkatesh L.

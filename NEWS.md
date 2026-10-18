@@ -11,10 +11,12 @@
   `predict_FEV1_gli2012()` and `predict_FVC_gli2012()` always use GLI-2012, whatever the default.
 * New `equations = "auto"`: GLI-2012 where race is known, GLI Global where race is missing or
   "unknown". Each row of the result records the equations used in a new `equations` column.
-* Ages 3–95 are now supported (previously 25–95). The age splines are three smoothly joined
-  fifth-order polynomials in age/100, fitted to the official GLI tables; predicted values and LLNs
-  agree with the tables to within 0.1% on average and 0.45% at worst.
-* GLI-2012 results for adults change slightly (typically by less than 0.1%) because all spline
-  polynomials were refitted for the full age range.
+* Ages 3–95 are now supported (previously 25–95).
+* New `method` argument. The default, `"lookup"`, uses GLI's official age-spline lookup tables
+  with linear interpolation, so results are exact GLI values. `"polynomial"` uses closed-form
+  formulas (three smoothly joined fifth-order polynomials in age/100, fitted to the official tables;
+  within 0.1% on average and 0.45% at worst) for reproducing the calculation in other software.
+* GLI-2012 results for adults change slightly (typically by less than 0.1%): the default now uses
+  the official tables instead of the previous adult polynomial approximations.
 * `race` is now optional, sex values other than female/male give `NA` (previously treated as male),
   inputs of length 1 are recycled, and the LLN uses z = 1.645 (previously 1.644).

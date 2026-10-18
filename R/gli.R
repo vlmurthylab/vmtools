@@ -11,8 +11,26 @@
 )
 .gli_race_unknown <- c("unknown", "u", "")
 
-.gli_predict <- function(param, age, height, race, sex, measured, equations) {
+.gli_methods <- c("lookup", "polynomial")
+
+# Age spline (Mspline, Sspline) at one age, by linear interpolation in the official
+# lookup table (GLI's method) or from the fitted polynomials in gli_coefficients.R
+.gli_splines <- function(key, age, method, cf) {
+  if (method == "lookup") {
+    t <- .gli_tables[[key]]
+    i <- min(floor((age - 3) * 4) + 1, nrow(t) - 1)        # row at or below age (ages 3-95, step 0.25)
+    w <- (age - t$age[i]) / 0.25
+    return(c(t$Mspline[i] + w * (t$Mspline[i + 1] - t$Mspline[i]),
+             t$Sspline[i] + w * (t$Sspline[i + 1] - t$Sspline[i])))
+  }
+  piece <- if (age < 12) 1 else if (age < 25) 2 else 3
+  x <- (age / 100)^(0:5)
+  c(sum(cf$Mspline[piece, ] * x), sum(cf$Sspline[piece, ] * x))
+}
+
+.gli_predict <- function(param, age, height, race, sex, measured, equations, method = "lookup") {
   equations <- match.arg(equations, .gli_equations)
+  method <- match.arg(method, .gli_methods)
   n <- length(age)
   if (is.null(race)) race <- rep(NA, n)
   args <- list(height = height, race = race, sex = sex, measured = measured)
@@ -49,14 +67,14 @@
     (eq == "GLI-Global" | !is.na(group))
   M <- S <- L <- rep(NA_real_, n)
   for (i in which(usable)) {
-    cf <- .gli_coef[[paste(eq[i], param, sex_lab[i], sep = ".")]]
-    piece <- if (age[i] < 12) 1 else if (age[i] < 25) 2 else 3
-    x <- (age[i] / 100)^(0:5)
+    key <- paste(eq[i], param, sex_lab[i], sep = ".")
+    cf <- .gli_coef[[key]]
+    spl <- .gli_splines(key, age[i], method, cf)
     eth <- match(group[i], names(.gli_race_groups)) - 1          # 0 = Caucasian
     a_eth <- if (eq[i] == "GLI-2012" && eth > 0) cf$a[3 + eth] else 0
     p_eth <- if (eq[i] == "GLI-2012" && eth > 0) cf$p[2 + eth] else 0
-    M[i] <- exp(cf$a[1] + cf$a[2] * log(args$height[i]) + cf$a[3] * log(age[i]) + a_eth + sum(cf$Mspline[piece, ] * x))
-    S[i] <- exp(cf$p[1] + cf$p[2] * log(age[i]) + p_eth + sum(cf$Sspline[piece, ] * x))
+    M[i] <- exp(cf$a[1] + cf$a[2] * log(args$height[i]) + cf$a[3] * log(age[i]) + a_eth + spl[1])
+    S[i] <- exp(cf$p[1] + cf$p[2] * log(age[i]) + p_eth + spl[2])
     L[i] <- cf$q[1] + cf$q[2] * log(age[i])
   }
 

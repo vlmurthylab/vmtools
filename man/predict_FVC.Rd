@@ -6,11 +6,19 @@
 \alias{predict_FVC_gliglobal}
 \title{Predict FVC from the Global Lung Function Initiative (GLI) equations}
 \usage{
-predict_FVC(age, height, race = NULL, sex, fvc = NA, equations = "GLI-2012")
+predict_FVC(
+  age,
+  height,
+  race = NULL,
+  sex,
+  fvc = NA,
+  equations = "GLI-2012",
+  method = "lookup"
+)
 
-predict_FVC_gli2012(age, height, race, sex, fvc = NA)
+predict_FVC_gli2012(age, height, race, sex, fvc = NA, method = "lookup")
 
-predict_FVC_gliglobal(age, height, sex, fvc = NA)
+predict_FVC_gliglobal(age, height, sex, fvc = NA, method = "lookup")
 }
 \arguments{
 \item{age}{age in years (3-95); outside this range the result is \code{NA}}
@@ -27,6 +35,9 @@ unknown. Not used with \code{equations = "GLI-Global"}.}
 \item{fvc}{measured FVC in liters (optional). If provided, percent predicted and Z-score are computed}
 
 \item{equations}{\code{"GLI-2012"} (default; see the section on defaults), \code{"GLI-Global"} or \code{"auto"}}
+
+\item{method}{\code{"lookup"} (default; official GLI lookup tables with linear interpolation) or
+\code{"polynomial"} (fitted closed-form formulas; see the Methods section)}
 }
 \value{
 data frame with predicted FVC (\code{fvc_pred}), coefficient of variation (\code{cv}),
@@ -69,15 +80,21 @@ Current ATS guidance favors race-neutral interpretation. For new analyses, alway
 }
 }
 
-\section{Accuracy}{
+\section{Methods}{
 
-The GLI age splines are published as lookup tables. vmtools replaces them with three
-fifth-order polynomials in (age/100) - the form the GLI memo "Implementing GLI 2012 lung function
-regression equations" (19 July 2015) uses for adults - on ages 3-12, 12-25 and 25-95, fitted
-(minimax) to the official GLI tables and joined with equal value and slope at ages 12 and 25.
-Compared with the official tables at every 0.25-year age from 3 to 95, predicted values and LLNs
-differ by less than 0.1\% on average (at most about 0.45\%), and Z-scores by less than 0.005 on
-average (at most about 0.035). See tests/testthat/test-spirometry.R.
+GLI defines the age dependence of M and S (the "splines") through lookup tables at 0.25-year
+intervals, with linear interpolation between them. Two methods are offered:
+\describe{
+  \item{\code{"lookup"} (default)}{GLI's method: the official lookup tables with linear
+    interpolation. Exact GLI values. The tables are listed in \code{data-raw/} in the package source.}
+  \item{\code{"polynomial"}}{Closed-form formulas: three fifth-order polynomials in (age/100) - the
+    form the GLI memo "Implementing GLI 2012 lung function regression equations" (19 July 2015) uses
+    for adults - on ages 3-12, 12-25 and 25-95, fitted (minimax) to the official tables and joined with
+    equal value and slope at ages 12 and 25. Useful when the same calculation must be reproduced in
+    other software. Compared with the lookup method at every 0.25-year age from 3 to 95, predicted
+    values and LLNs differ by less than 0.1\% on average (at most about 0.45\%), and Z-scores by less
+    than 0.005 on average (at most about 0.035). Coefficients are in \code{R/gli_coefficients.R}.}
+}
 }
 
 \examples{
@@ -92,6 +109,9 @@ predict_FVC_gliglobal(age = 39.1, height = 165, sex = "F", fvc = 2.21)
 
 # Shortcut that always uses GLI-2012, whatever the default
 predict_FVC_gli2012(age = 39.1, height = 165, race = "sea", sex = "F", fvc = 2.21)
+
+# Closed-form polynomial version (for reproducing in other software)
+predict_FVC(age = 39.1, height = 165, sex = "F", fvc = 2.21, equations = "GLI-Global", method = "polynomial")
 
 # auto: GLI-2012 where race is known, GLI Global where it is not
 predict_FVC(age = c(40, 40), height = 175, race = c("caucasian", NA), sex = "M", equations = "auto")

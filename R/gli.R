@@ -80,7 +80,7 @@
 
   label <- ifelse(eq == "GLI-Global", "GLI-Global", paste0("GLI-2012 (", group, ")"))
   label[!usable] <- NA
-  LLN <- exp(log(1 - 1.645 * L * S) / L + log(M))
+  LLN <- exp(log(1 - 1.6448536269514722 * L * S) / L + log(M))   # z = qnorm(0.95), 5th percentile
   pct_pred <- (args$measured / M) * 100
   Z <- ((args$measured / M)^L - 1) / (L * S)
   out <- data.frame(M, S, L, LLN, pct_pred, Z, label, stringsAsFactors = FALSE)

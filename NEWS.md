@@ -19,4 +19,4 @@
 * GLI-2012 results for adults change slightly (typically by less than 0.1%): the default now uses
   the official tables instead of the previous adult polynomial approximations.
 * `race` is now optional, sex values other than female/male give `NA` (previously treated as male),
-  inputs of length 1 are recycled, and the LLN uses z = 1.645 (previously 1.644).
+  inputs of length 1 are recycled, and the LLN uses the exact 5th-percentile z, `qnorm(0.95)` = 1.6449 (previously 1.644).

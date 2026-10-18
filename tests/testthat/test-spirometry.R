@@ -1,6 +1,6 @@
 # Reference values are computed independently from the official GLI lookup tables (spline linearly
 # interpolated between 0.25-year ages, as GLI specifies): GLI-2012 (Quanjer PH, et al. Eur Respir J 2012)
-# for Caucasians and GLI Global (Bowerman C, et al. Am J Respir Crit Care Med 2023), rounded to 4 decimals.
+# for Caucasians and GLI Global (Bowerman C, et al. Am J Respir Crit Care Med 2023), rounded to 4 decimals; LLN uses z = qnorm(0.95).
 # method = "lookup" must match them to rounding; method = "polynomial" (fitted formulas) within 0.5%.
 # The cases straddle the polynomial joins at ages 12 and 25.
 
@@ -14,7 +14,7 @@ test_that("GLI-2012 FEV1 matches the official tables (Caucasian)", {
   tol <- tols[[method]]
   res <- predict_FEV1(cases$age, cases$height, "caucasian", cases$sex, equations = "GLI-2012", method = method)
   expect_equal(res$fev1_pred, c(0.9676, 1.6050, 2.4239, 2.5536, 3.9746, 3.8387, 3.3854, 4.0780, 2.1360, 2.4742), tolerance = tol)
-  expect_equal(res$fev1_lln,  c(0.7532, 1.2889, 1.9524, 2.0665, 3.1917, 3.0850, 2.7205, 3.2313, 1.5561, 1.6799), tolerance = tol)
+  expect_equal(res$fev1_lln,  c(0.7533, 1.2890, 1.9524, 2.0666, 3.1917, 3.0851, 2.7206, 3.2313, 1.5562, 1.6800), tolerance = tol)
   }
 })
 
@@ -23,7 +23,7 @@ test_that("GLI-2012 FVC matches the official tables (Caucasian)", {
   tol <- tols[[method]]
   res <- predict_FVC(cases$age, cases$height, "caucasian", cases$sex, equations = "GLI-2012", method = method)
   expect_equal(res$fvc_pred, c(1.0277, 1.8300, 2.7426, 2.9941, 4.5995, 4.5062, 3.9439, 5.0546, 2.7491, 3.3506), tolerance = tol)
-  expect_equal(res$fvc_lln,  c(0.7962, 1.4695, 2.2170, 2.4327, 3.7321, 3.6000, 3.1508, 4.0233, 2.0069, 2.3833), tolerance = tol)
+  expect_equal(res$fvc_lln,  c(0.7962, 1.4696, 2.2171, 2.4327, 3.7322, 3.6000, 3.1509, 4.0234, 2.0069, 2.3834), tolerance = tol)
   }
 })
 
@@ -32,7 +32,7 @@ test_that("GLI Global FEV1 matches the official tables", {
   tol <- tols[[method]]
   res <- predict_FEV1(cases$age, cases$height, sex = cases$sex, equations = "GLI-Global", method = method)
   expect_equal(res$fev1_pred, c(0.9247, 1.5690, 2.3403, 2.4729, 3.7003, 3.6808, 3.1965, 3.8355, 2.0651, 2.3923), tolerance = tol)
-  expect_equal(res$fev1_lln,  c(0.7093, 1.2311, 1.8333, 1.9471, 2.9134, 2.8412, 2.4671, 2.9388, 1.4404, 1.7128), tolerance = tol)
+  expect_equal(res$fev1_lln,  c(0.7094, 1.2311, 1.8334, 1.9472, 2.9135, 2.8413, 2.4672, 2.9389, 1.4405, 1.7128), tolerance = tol)
   }
 })
 
@@ -41,13 +41,13 @@ test_that("GLI Global FVC matches the official tables", {
   tol <- tols[[method]]
   res <- predict_FVC(cases$age, cases$height, sex = cases$sex, equations = "GLI-Global", method = method)
   expect_equal(res$fvc_pred, c(0.9843, 1.7791, 2.6327, 2.8870, 4.2380, 4.2974, 3.6840, 4.6986, 2.6400, 3.2628), tolerance = tol)
-  expect_equal(res$fvc_lln,  c(0.7608, 1.3980, 2.0610, 2.2735, 3.3349, 3.3275, 2.8523, 3.6177, 1.8694, 2.3937), tolerance = tol)
+  expect_equal(res$fvc_lln,  c(0.7608, 1.3980, 2.0611, 2.2736, 3.3350, 3.3276, 2.8524, 3.6178, 1.8694, 2.3937), tolerance = tol)
   }
 })
 
 test_that("GLI-2012 FEV1 reproduces the worked examples in the GLI implementation memo (2015)", {
   # 'Implementing GLI 2012 lung function regression equations', 19 July 2015, Section 3 (look-up table results).
-  # The memo rounds intermediate values to 4 decimals and uses 1.644 rather than 1.645 for the LLN.
+  # The memo rounds intermediate values to 4 decimals and uses z = 1.644 for the LLN (vmtools uses qnorm(0.95) = 1.6449).
   memo <- function(method) predict_FEV1(age = c(4.8, 12.2, 53, 39.1, 39.1), height = c(107, 152, 175, 165, 165),
                       race = c("caucasian", "aa", "sea", "sea", "other"), sex = c("M", "M", "M", "F", "F"),
                       fev1 = c(0.800, 2.405, 2.410, 2.210, 2.210), equations = "GLI-2012", method = method)

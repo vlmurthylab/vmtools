@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use vmtools, please cite it as below."
-title: "vmtools: handy tools for cardiovascular epidemiology"
+title: "vmtools: handy tools for cardiometabolic epidemiology"
 type: software
 version: "0.2.0"
 doi: "10.5281/zenodo.23445404"

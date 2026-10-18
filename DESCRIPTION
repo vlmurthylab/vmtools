@@ -4,9 +4,9 @@ Title: Venk Murthy's Handy Tools
 Version: 0.2.0
 Author: Venkatesh L. Murthy
 Maintainer: Venkatesh L. Murthy <venkmurthy@gmail.com>
-Description: Handy tools for cardiovascular epidemiology, including the PREVENT
+Description: Handy tools for cardiometabolic epidemiology, including the PREVENT
     and Pooled Cohort Equations risk scores, insulin sensitivity and resistance
-    indices, GLI-2012 spirometry reference equations, and Human Metabolome
+    indices, GLI-2012 and GLI Global spirometry reference equations, and Human Metabolome
     Database lookups.
 License: GPL-3
 Encoding: UTF-8

@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23440811.svg)](https://doi.org/10.5281/zenodo.23440811)
 
-R helpers for cardiovascular epidemiology from the [Murthy Lab](https://murthylab.org) at the University of Michigan.
+R helpers for cardiometabolic epidemiology from the [Murthy Lab](https://murthylab.org) at the University of Michigan.
 
 ## Installation
 

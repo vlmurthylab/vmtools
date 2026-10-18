@@ -66,7 +66,7 @@ The test suite in `tests/testthat` checks the PCE against the worked example in 
 
 ## Citation
 
-vmtools is archived on Zenodo. To cite a specific version, use its DOI (v0.1.0: [10.5281/zenodo.23440812](https://doi.org/10.5281/zenodo.23440812)); [10.5281/zenodo.23440811](https://doi.org/10.5281/zenodo.23440811) always resolves to the latest version. See [`CITATION.cff`](CITATION.cff), or use GitHub's "Cite this repository" button.
+vmtools is archived on Zenodo. To cite a specific version, use its DOI (v0.2.0: [10.5281/zenodo.23445404](https://doi.org/10.5281/zenodo.23445404); v0.1.0: [10.5281/zenodo.23440812](https://doi.org/10.5281/zenodo.23440812)); [10.5281/zenodo.23440811](https://doi.org/10.5281/zenodo.23440811) always resolves to the latest version. See [`CITATION.cff`](CITATION.cff), or use GitHub's "Cite this repository" button.
 
 ## License
 

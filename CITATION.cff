@@ -3,8 +3,11 @@ message: "If you use vmtools, please cite it as below."
 title: "vmtools: handy tools for cardiovascular epidemiology"
 type: software
 version: "0.2.0"
-doi: "10.5281/zenodo.23440811"
+doi: "10.5281/zenodo.23445404"
 identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23445404"
+    description: "DOI for this version (v0.2.0)"
   - type: doi
     value: "10.5281/zenodo.23440811"
     description: "Concept DOI for all versions; resolves to the latest release"

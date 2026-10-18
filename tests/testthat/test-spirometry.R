@@ -33,3 +33,24 @@ test_that("out-of-range ages and unrecognized ethnicity return NA", {
 test_that("mismatched input lengths are rejected", {
   expect_error(predict_FEV1(c(40, 50), 175, c("c", "c"), c("M", "M")))
 })
+
+# GLI Global (race-neutral) reference values, computed from the official GLI Global
+# lookup tables and equations (Bowerman C, et al. Am J Respir Crit Care Med 2023).
+# vmtools approximates the age splines with polynomials fitted for ages 25-95.
+
+test_that("predict_FEV1_global matches GLI Global", {
+  res <- predict_FEV1_global(gli_cases$age, gli_cases$height, gli_cases$sex)
+  expect_equal(res$fev1_pred, c(3.8355, 2.0651, 3.1354, 2.3923), tolerance = 0.003)
+  expect_equal(res$fev1_lln,  c(2.9388, 1.4404, 2.4096, 1.7128), tolerance = 0.003)
+})
+
+test_that("predict_FVC_global matches GLI Global", {
+  res <- predict_FVC_global(gli_cases$age, gli_cases$height, gli_cases$sex)
+  expect_equal(res$fvc_pred, c(4.6986, 2.6400, 3.6839, 3.2628), tolerance = 0.003)
+  expect_equal(res$fvc_lln,  c(3.6177, 1.8694, 2.8451, 2.3937), tolerance = 0.003)
+})
+
+test_that("GLI Global functions return NA outside 25-95 or for unrecognized sex", {
+  expect_true(is.na(predict_FEV1_global(20, 175, "M")$fev1_pred))
+  expect_true(is.na(predict_FVC_global(40, 175, "unknown")$fvc_pred))
+})

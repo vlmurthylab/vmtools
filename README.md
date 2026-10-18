@@ -22,6 +22,7 @@ remotes::install_github("vlmurthylab/vmtools")
 | | `calcMatsuda.ISI()` | Matsuda M, DeFronzo RA. *Diabetes Care* 1999;22:1462–70 |
 | | `calcAvignon.SI()` | Avignon A, et al. *Int J Obes* 1999;23:512–7 |
 | Spirometry | `predict_FEV1()`, `predict_FVC()` (GLI-2012, ages 25–95) | Quanjer PH, et al. *Eur Respir J* 2012;40:1324–43 |
+| | `predict_FEV1_global()`, `predict_FVC_global()` (race-neutral GLI Global, ages 25–95) | Bowerman C, et al. *Am J Respir Crit Care Med* 2023 ([doi:10.1164/rccm.202205-0963OC](https://doi.org/10.1164/rccm.202205-0963OC)) |
 | Metabolomics | `HMDB_ID_from_name()`, `HMDB_ID_from_ID()` | [Human Metabolome Database](https://hmdb.ca) |
 | Utilities | `format.pval()`, `get_labels()`, `mqsave()`, `mqread()` | |
 
@@ -54,12 +55,12 @@ calcHOMA.IR(insulin = 10, glucose = 100)
 - **Units.** Cholesterol and glucose are in mg/dL, insulin in uU/mL, height in cm, weight in kg.
 - **Coded inputs.** Sex, race, treatment and smoking accept numeric codes or case-insensitive labels (for example `0`, `"f"` or `"female"`). Unrecognized values return `NA`. See each function's help page for the accepted labels.
 - **Age ranges.** PREVENT clamps age to 30–79 and PCE to 40–79, the ranges the equations were derived in. The GLI functions return `NA` outside ages 25–95.
-- **GLI equations.** The age splines from the official GLI-2012 lookup tables are approximated with polynomials, which agree with the tables to within 0.5% for ages 25–95.
+- **GLI equations.** The age splines from the official GLI lookup tables are approximated with polynomials, which agree with the tables to within 0.5% (GLI-2012) and 0.3% (GLI Global) for ages 25–95. The GLI Global polynomials were fitted by vmtools; GLI Global needs no ethnicity input.
 - **HMDB lookups** query the HMDB website, so they need internet access and may break if HMDB changes its pages.
 
 ## Validation
 
-The test suite in `tests/testthat` checks the PCE against the worked example in Goff 2013 (Table A), the PREVENT equations against the reference values in the [preventr](https://github.com/martingmayer/preventr) package's test suite, and the spirometry functions against the official GLI-2012 lookup tables.
+The test suite in `tests/testthat` checks the PCE against the worked example in Goff 2013 (Table A), the PREVENT equations against the reference values in the [preventr](https://github.com/martingmayer/preventr) package's test suite, and the spirometry functions against the official GLI-2012 and GLI Global lookup tables.
 
 ## Citation
 

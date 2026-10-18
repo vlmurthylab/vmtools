@@ -21,7 +21,8 @@ remotes::install_github("vlmurthylab/vmtools")
 | | `calcQUICKI()` | Katz A, et al. *J Clin Endocrinol Metab* 2000;85:2402–10 |
 | | `calcMatsuda.ISI()` | Matsuda M, DeFronzo RA. *Diabetes Care* 1999;22:1462–70 |
 | | `calcAvignon.SI()` | Avignon A, et al. *Int J Obes* 1999;23:512–7 |
-| Spirometry | `predict_FEV1()`, `predict_FVC()` (GLI-2012, ages 25–95) | Quanjer PH, et al. *Eur Respir J* 2012;40:1324–43 |
+| Spirometry | `predict_FEV1()`, `predict_FVC()`: GLI-2012 (race-specific) or GLI Global (race-neutral), ages 3–95 | Quanjer PH, et al. *Eur Respir J* 2012;40:1324–43; Bowerman C, et al. *Am J Respir Crit Care Med* 2023;207:768–74 ([doi:10.1164/rccm.202205-0963OC](https://doi.org/10.1164/rccm.202205-0963OC)) |
+| | `predict_FEV1_global()`, `predict_FVC_global()`: shortcuts for GLI Global | |
 | Metabolomics | `HMDB_ID_from_name()`, `HMDB_ID_from_ID()` | [Human Metabolome Database](https://hmdb.ca) |
 | Utilities | `format.pval()`, `get_labels()`, `mqsave()`, `mqread()` | |
 
@@ -42,8 +43,9 @@ calcPREVENT.totalCVD(age = 50, sex = "female", tc = 200, hdl = 45, sbp = 160,
 calcPCE(age = 55, race = "white", sex = "male", tc = 213, hdl = 50, sbp = 120,
         bptx = 0, smoking = 0, dm = 0)
 
-# GLI-2012 predicted FEV1 with z-score and percent predicted
-predict_FEV1(age = 40, height = 175, race = "caucasian", sex = "M", fev1 = 3.6)
+# GLI predicted FEV1 with z-score and percent predicted; always state the equations
+predict_FEV1(age = 40, height = 175, race = "caucasian", sex = "M", fev1 = 3.6, equations = "GLI-2012")
+predict_FEV1(age = 40, height = 175, sex = "M", fev1 = 3.6, equations = "GLI-Global")   # race-neutral
 
 # Insulin resistance from fasting insulin (uU/mL) and glucose (mg/dL)
 calcHOMA.IR(insulin = 10, glucose = 100)
@@ -53,13 +55,14 @@ calcHOMA.IR(insulin = 10, glucose = 100)
 
 - **Units.** Cholesterol and glucose are in mg/dL, insulin in uU/mL, height in cm, weight in kg.
 - **Coded inputs.** Sex, race, treatment and smoking accept numeric codes or case-insensitive labels (for example `0`, `"f"` or `"female"`). Unrecognized values return `NA`. See each function's help page for the accepted labels.
-- **Age ranges.** PREVENT clamps age to 30–79 and PCE to 40–79, the ranges the equations were derived in. The GLI functions return `NA` outside ages 25–95.
-- **GLI equations.** The age splines from the official GLI-2012 lookup tables are approximated with polynomials, which agree with the tables to within 0.5% for ages 25–95.
+- **Age ranges.** PREVENT clamps age to 30–79 and PCE to 40–79, the ranges the equations were derived in. The GLI functions return `NA` outside ages 3–95.
+- **GLI equations: the default may change.** `predict_FEV1()` and `predict_FVC()` take `equations = "GLI-2012"` (race-specific, **the current default**), `"GLI-Global"` (race-neutral) or `"auto"` (GLI-2012 where race is known, GLI Global where it is not). **The default is kept for backward compatibility and may change to `"GLI-Global"` in a future major version. Always set `equations` explicitly in new analyses.** Every result includes an `equations` column naming what was used.
+- **GLI accuracy.** GLI publishes its age splines as lookup tables; vmtools replaces them with three fifth-order polynomials in age/100 (ages 3–12, 12–25, 25–95; the form of the GLI implementation memo), fitted to the official tables and joined smoothly. Predicted values and LLNs agree with the tables to within 0.1% on average and 0.45% at worst, at every age from 3 to 95.
 - **HMDB lookups** query the HMDB website, so they need internet access and may break if HMDB changes its pages.
 
 ## Validation
 
-The test suite in `tests/testthat` checks the PCE against the worked example in Goff 2013 (Table A), the PREVENT equations against the reference values in the [preventr](https://github.com/martingmayer/preventr) package's test suite, and the spirometry functions against the official GLI-2012 lookup tables.
+The test suite in `tests/testthat` checks the PCE against the worked example in Goff 2013 (Table A), the PREVENT equations against the reference values in the [preventr](https://github.com/martingmayer/preventr) package's test suite, and the spirometry functions against the official GLI-2012 and GLI Global lookup tables and the worked examples in the GLI implementation memo (2015).
 
 ## Citation
 

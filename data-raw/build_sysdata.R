@@ -2,7 +2,8 @@
 # Run from the package root:  Rscript data-raw/build_sysdata.R
 #
 # Sources (see data-raw/README.md):
-#   gli2012_splines.csv     GLI-2012 lookup tables for FEV1 and FVC (Quanjer PH, et al. Eur Respir J 2012).
+#   gli2012_splines.csv     GLI-2012 lookup tables for FEV1 and FVC, from the official GLI workbook
+#                           lookuptables.xls (Quanjer PH, et al. Eur Respir J 2012).
 #   gli_global_splines.csv  GLI Global lookup tables for FEV1 and FVC, from the official GLI workbook
 #                           gli_global_lookuptables_dec6.xlsx (Bowerman C, et al. Am J Respir Crit Care Med 2023).
 

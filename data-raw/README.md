@@ -6,7 +6,7 @@ per sex, measure and age (3 to 95 years in steps of 0.25): `Mspline`, `Sspline` 
 
 | File | Equations | Source |
 |---|---|---|
-| `gli2012_splines.csv` | GLI-2012 (race-specific) | The official GLI-2012 lookup tables (Quanjer PH, et al. *Eur Respir J* 2012;40:1324–43), 4 decimals, as distributed with the rspiro R package (GPL ≥ 2). FEV1 values were checked against every table value printed in the GLI memo "Implementing GLI 2012 lung function regression equations" (19 July 2015). |
+| `gli2012_splines.csv` | GLI-2012 (race-specific) | The official GLI workbook `lookuptables.xls` (Quanjer PH, et al. *Eur Respir J* 2012;40:1324–43), sheets "FEV1 males", "FEV1 females", "FVC males" and "FVC females", copied at full precision. The base coefficients in `R/gli_coefficients.R` match the coefficient blocks in the same sheets, and the tables agree with every value printed in the GLI memo "Implementing GLI 2012 lung function regression equations" (19 July 2015). |
 | `gli_global_splines.csv` | GLI Global (race-neutral) | The official GLI workbook `gli_global_lookuptables_dec6.xlsx` (Bowerman C, et al. *Am J Respir Crit Care Med* 2023;207:768–74), copied at full precision. |
 
 Following GLI, values between table ages are found by linear interpolation.

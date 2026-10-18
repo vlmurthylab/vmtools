@@ -3,7 +3,7 @@
 # only by method = "polynomial" (method = "lookup" uses the tables in R/sysdata.rda).
 #
 # Base coefficients:
-#   GLI-2012: Quanjer PH, et al. Eur Respir J 2012;40:1324-43 (official GLI-2012 coefficients;
+#   GLI-2012: Quanjer PH, et al. Eur Respir J 2012;40:1324-43 (official GLI workbook lookuptables.xls;
 #             FEV1 values match Tables E1 and E3 of the GLI memo 'Implementing GLI 2012 lung function
 #             regression equations', 19 July 2015).
 #   GLI-Global: Bowerman C, et al. Am J Respir Crit Care Med 2023;207:768-74, online supplement
@@ -21,6 +21,13 @@
 #   are minimax fits constrained to match the value and slope of the next-older piece at
 #   ages 25 and 12, so the curves are smooth with no jumps. Each row gives c0..c5 for
 #   c0 + c1*(age/100) + ... + c5*(age/100)^5.
+#
+# Why not GLI's own adult polynomials? GLI published 25-95 y polynomials only for adults: FEV1 and
+# FVC in its workbook lookuptables.xls, and FEV1 in its 2015 implementation memo. The workbook's
+# male FEV1 polynomial has two erroneous coefficients (b4 = 0, c4 = -220.3631; the memo gives
+# -0.1215 and -109.6777), and earlier versions of vmtools (before 0.1.0) mistranscribed the
+# workbook's female FVC b4 (+0.973) as -0.9730. The polynomials here were refitted to the
+# official tables for ages 3-95 and are checked against them in tests/testthat/test-spirometry.R.
 
 .gli_coef <- list(
   "GLI-2012.FEV1.male" = list(

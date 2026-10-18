@@ -72,11 +72,16 @@ test_that("race is ignored, with a warning, under GLI Global", {
   expect_equal(res$fvc_pred, predict_FVC(40, 175, sex = "M", equations = "GLI-Global")$fvc_pred)
 })
 
-test_that("shortcuts match equations = 'GLI-Global'", {
-  expect_equal(predict_FEV1_global(cases$age, cases$height, cases$sex),
+test_that("shortcuts match the corresponding equations argument", {
+  expect_equal(predict_FEV1_gliglobal(cases$age, cases$height, cases$sex),
                predict_FEV1(cases$age, cases$height, sex = cases$sex, equations = "GLI-Global"))
-  expect_equal(predict_FVC_global(cases$age, cases$height, cases$sex),
+  expect_equal(predict_FVC_gliglobal(cases$age, cases$height, cases$sex),
                predict_FVC(cases$age, cases$height, sex = cases$sex, equations = "GLI-Global"))
+  expect_equal(predict_FEV1_gli2012(cases$age, cases$height, "aa", cases$sex),
+               predict_FEV1(cases$age, cases$height, "aa", cases$sex, equations = "GLI-2012"))
+  expect_equal(predict_FVC_gli2012(cases$age, cases$height, "nea", cases$sex),
+               predict_FVC(cases$age, cases$height, "nea", cases$sex, equations = "GLI-2012"))
+  expect_error(predict_FEV1_gli2012(40, 175, sex = "M"))   # race is required
 })
 
 test_that("out-of-range ages, unrecognized sex or race, and bad equations are handled", {

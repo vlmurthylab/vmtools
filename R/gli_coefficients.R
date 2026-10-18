@@ -4,7 +4,8 @@
 #   GLI-2012: Quanjer PH, et al. Eur Respir J 2012;40:1324-43 (official GLI-2012 coefficients;
 #             FEV1 values match Tables E1 and E3 of the GLI memo 'Implementing GLI 2012 lung function
 #             regression equations', 19 July 2015).
-#   GLI-Global: Bowerman C, et al. Am J Respir Crit Care Med 2023;207:768-74.
+#   GLI-Global: Bowerman C, et al. Am J Respir Crit Care Med 2023;207:768-74, online supplement
+#               Table E2 (checked against the equations in the official GLI Global lookup-table workbook).
 #   M = exp(a0 + a1*ln(height) + a2*ln(age) + [GLI-2012 ethnic terms a3..a6] + Mspline)
 #   S = exp(p0 + p1*ln(age) + [GLI-2012 ethnic terms p2..p5] + Sspline)
 #   L = q0 + q1*ln(age)          (Lspline is zero for FEV1 and FVC)

@@ -22,7 +22,7 @@ remotes::install_github("vlmurthylab/vmtools")
 | | `calcMatsuda.ISI()` | Matsuda M, DeFronzo RA. *Diabetes Care* 1999;22:1462–70 |
 | | `calcAvignon.SI()` | Avignon A, et al. *Int J Obes* 1999;23:512–7 |
 | Spirometry | `predict_FEV1()`, `predict_FVC()`: GLI-2012 (race-specific) or GLI Global (race-neutral), ages 3–95 | Quanjer PH, et al. *Eur Respir J* 2012;40:1324–43; Bowerman C, et al. *Am J Respir Crit Care Med* 2023;207:768–74 ([doi:10.1164/rccm.202205-0963OC](https://doi.org/10.1164/rccm.202205-0963OC)) |
-| | `predict_FEV1_global()`, `predict_FVC_global()`: shortcuts for GLI Global | |
+| | `predict_FEV1_gli2012()`, `predict_FVC_gli2012()`, `predict_FEV1_gliglobal()`, `predict_FVC_gliglobal()`: shortcuts that always use one set of equations | |
 | Metabolomics | `HMDB_ID_from_name()`, `HMDB_ID_from_ID()` | [Human Metabolome Database](https://hmdb.ca) |
 | Utilities | `format.pval()`, `get_labels()`, `mqsave()`, `mqread()` | |
 

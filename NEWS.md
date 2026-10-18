@@ -7,7 +7,8 @@
   working, but **it may change to `"GLI-Global"` (race-neutral) in a future major version.**
   Set `equations` explicitly in all new analyses.
 * New race-neutral GLI Global equations (Bowerman et al. 2023): `equations = "GLI-Global"`, or the
-  shortcuts `predict_FEV1_global()` and `predict_FVC_global()`.
+  shortcuts `predict_FEV1_gliglobal()` and `predict_FVC_gliglobal()`. The shortcuts
+  `predict_FEV1_gli2012()` and `predict_FVC_gli2012()` always use GLI-2012, whatever the default.
 * New `equations = "auto"`: GLI-2012 where race is known, GLI Global where race is missing or
   "unknown". Each row of the result records the equations used in a new `equations` column.
 * Ages 3–95 are now supported (previously 25–95). The age splines are three smoothly joined

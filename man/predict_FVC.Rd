@@ -2,12 +2,15 @@
 % Please edit documentation in R/predict_FVC.R
 \name{predict_FVC}
 \alias{predict_FVC}
-\alias{predict_FVC_global}
+\alias{predict_FVC_gli2012}
+\alias{predict_FVC_gliglobal}
 \title{Predict FVC from the Global Lung Function Initiative (GLI) equations}
 \usage{
 predict_FVC(age, height, race = NULL, sex, fvc = NA, equations = "GLI-2012")
 
-predict_FVC_global(age, height, sex, fvc = NA)
+predict_FVC_gli2012(age, height, race, sex, fvc = NA)
+
+predict_FVC_gliglobal(age, height, sex, fvc = NA)
 }
 \arguments{
 \item{age}{age in years (3-95); outside this range the result is \code{NA}}
@@ -34,11 +37,15 @@ Z-score (\code{fvc_Z}) and the equations used for each row (\code{equations})
 Computes predicted FVC, its lower limit of normal (LLN), and, if a measured value is given,
 percent predicted and Z-score, from either the race-specific GLI-2012 equations
 (Quanjer PH, et al. Eur Respir J 2012;40:1324-43) or the race-neutral GLI Global equations
-(Bowerman C, et al. Am J Respir Crit Care Med 2023;207:768-74). Valid for ages 3-95.
+(Bowerman C, et al. Am J Respir Crit Care Med 2023;207:768-74; coefficients from its online supplement,
+Table E2, and the official GLI Global lookup tables). Valid for ages 3-95.
 }
 \section{Functions}{
 \itemize{
-\item \code{predict_FVC_global()}: Shortcut for \code{predict_FVC(..., equations = "GLI-Global")}
+\item \code{predict_FVC_gli2012()}: Race-specific GLI-2012; same as \code{equations = "GLI-2012"}, but unaffected by any
+future change of default. \code{race} is required.
+
+\item \code{predict_FVC_gliglobal()}: Race-neutral GLI Global; same as \code{equations = "GLI-Global"}.
 
 }}
 \section{Default equations may change}{
@@ -81,7 +88,10 @@ predict_FVC(age = c(4.8, 12.2, 53, 39.1), height = c(107, 152, 175, 165),
 
 # GLI Global (race-neutral)
 predict_FVC(age = 39.1, height = 165, sex = "F", fvc = 2.21, equations = "GLI-Global")
-predict_FVC_global(age = 39.1, height = 165, sex = "F", fvc = 2.21)
+predict_FVC_gliglobal(age = 39.1, height = 165, sex = "F", fvc = 2.21)
+
+# Shortcut that always uses GLI-2012, whatever the default
+predict_FVC_gli2012(age = 39.1, height = 165, race = "sea", sex = "F", fvc = 2.21)
 
 # auto: GLI-2012 where race is known, GLI Global where it is not
 predict_FVC(age = c(40, 40), height = 175, race = c("caucasian", NA), sex = "M", equations = "auto")

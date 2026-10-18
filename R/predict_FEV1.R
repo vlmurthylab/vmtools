@@ -3,7 +3,8 @@
 #' Computes predicted FEV1, its lower limit of normal (LLN), and, if a measured value is given,
 #' percent predicted and Z-score, from either the race-specific GLI-2012 equations
 #' (Quanjer PH, et al. Eur Respir J 2012;40:1324-43) or the race-neutral GLI Global equations
-#' (Bowerman C, et al. Am J Respir Crit Care Med 2023;207:768-74). Valid for ages 3-95.
+#' (Bowerman C, et al. Am J Respir Crit Care Med 2023;207:768-74; coefficients from its online supplement,
+#' Table E2, and the official GLI Global lookup tables). Valid for ages 3-95.
 #'
 #' @section Default equations may change:
 #' \strong{The default, \code{equations = "GLI-2012"} (race-specific), is kept for backward compatibility
@@ -52,7 +53,10 @@
 #'
 #' # GLI Global (race-neutral)
 #' predict_FEV1(age = 39.1, height = 165, sex = "F", fev1 = 2.21, equations = "GLI-Global")
-#' predict_FEV1_global(age = 39.1, height = 165, sex = "F", fev1 = 2.21)
+#' predict_FEV1_gliglobal(age = 39.1, height = 165, sex = "F", fev1 = 2.21)
+#'
+#' # Shortcut that always uses GLI-2012, whatever the default
+#' predict_FEV1_gli2012(age = 39.1, height = 165, race = "sea", sex = "F", fev1 = 2.21)
 #'
 #' # auto: GLI-2012 where race is known, GLI Global where it is not
 #' predict_FEV1(age = c(40, 40), height = 175, race = c("caucasian", NA), sex = "M", equations = "auto")
@@ -62,9 +66,17 @@ predict_FEV1 <- function(age, height, race = NULL, sex, fev1 = NA, equations = "
   .gli_predict("FEV1", age, height, race, sex, fev1, equations)
 }
 
-#' @describeIn predict_FEV1 Shortcut for \code{predict_FEV1(..., equations = "GLI-Global")}
+#' @describeIn predict_FEV1 Race-specific GLI-2012; same as \code{equations = "GLI-2012"}, but unaffected by any
+#' future change of default. \code{race} is required.
 #' @export
 
-predict_FEV1_global <- function(age, height, sex, fev1 = NA) {
+predict_FEV1_gli2012 <- function(age, height, race, sex, fev1 = NA) {
+  .gli_predict("FEV1", age, height, race, sex, fev1, "GLI-2012")
+}
+
+#' @describeIn predict_FEV1 Race-neutral GLI Global; same as \code{equations = "GLI-Global"}.
+#' @export
+
+predict_FEV1_gliglobal <- function(age, height, sex, fev1 = NA) {
   .gli_predict("FEV1", age, height, NULL, sex, fev1, "GLI-Global")
 }

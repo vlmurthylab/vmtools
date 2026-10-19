@@ -25,10 +25,11 @@
 #
 # Why not GLI's own adult polynomials? GLI published 25-95 y polynomials only for adults: FEV1 and
 # FVC in its workbook lookuptables.xls (online supplement to Quanjer 2012), and FEV1 in its 2015
-# implementation memo. The workbook's male FEV1 polynomial has two erroneous coefficients (b4 = 0, c4 = -220.3631; the memo gives
-# -0.1215 and -109.6777), and earlier versions of vmtools (before 0.1.0) mistranscribed the
-# workbook's female FVC b4 (+0.973) as -0.9730. The polynomials here were refitted to the
-# official tables for ages 3-95 and are checked against them in tests/testthat/test-spirometry.R.
+# implementation memo. The workbook's male FEV1 polynomial has two erroneous coefficients
+# (b4 = 0, c4 = -220.3631; the memo gives -0.1215 and -109.6777), and earlier versions of vmtools
+# (before 0.1.0) mistranscribed the workbook's female FVC b4 (+0.973) as -0.9730. The polynomials
+# here were refitted to the official tables for ages 3-95 and are checked against them in
+# tests/testthat/test-spirometry.R.
 
 .gli_coef <- list(
   "GLI-2012.FEV1.male" = list(

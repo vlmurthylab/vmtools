@@ -109,7 +109,9 @@ my @core_block = map { glob_re($_, 1) } (
   (map { ("credentials.$_", "secrets.$_") } qw(json csv txt ini cfg yml yaml toml env)), 'credentials', 'secrets',
   'salt', '*.salt', 'SHA256SUMS', 'SHA256SUMS*.txt', '*.md5', '*.sha256', 'upstream-checksums', 'upstream-checksums*.txt',
   'STAT.baseline', (map { "pathmap*.$_" } qw(tsv csv txt)));
-my @repo_block = map { glob_re($_) } grep { length } split /\s*,\s*/, $conf{BLOCK_FILES};
+# Matched without regard to case, like the list above: exports from Windows
+# often have upper-case extensions (A.XML). ALLOW_FILES stays exact.
+my @repo_block = map { glob_re($_, 1) } grep { length } split /\s*,\s*/, $conf{BLOCK_FILES};
 
 # ---- Rules ----
 my $DATA_EXT = qr/\.(csv|tsv|xlsx?|xlsm|ods|parquet|feather|arrow|fst|sav|dta|sas7bdat|xpt|sqlite3?|db|duckdb

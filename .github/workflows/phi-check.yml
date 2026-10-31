@@ -1,0 +1,24 @@
+# Lab core: identical in every lab repository; change it in
+# vlmurthylab/project-template.
+#
+# Runs the same check as the pre-commit hook on every push and pull request,
+# for anyone who has not turned the hook on. A failure means data or
+# PHI-looking text reached GitHub: fix it and tell Venk.
+name: PHI check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phi-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check every file for data and PHI
+        run: perl tools/phi_guard.pl --all

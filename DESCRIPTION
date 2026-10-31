@@ -2,15 +2,16 @@ Package: vmtools
 Type: Package
 Title: Venk Murthy's Handy Tools
 Version: 0.2.0
-Author: Venkatesh L. Murthy
-Maintainer: Venkatesh L. Murthy <venkmurthy@gmail.com>
+Authors@R:
+    person("Venkatesh L.", "Murthy", role = c("aut", "cre"),
+           email = "venkmurthy@gmail.com") # phi-ok: the maintainer contact R requires, not a study participant
 Description: Handy tools for cardiometabolic epidemiology, including the PREVENT
     and Pooled Cohort Equations risk scores, insulin sensitivity and resistance
     indices, GLI-2012 and GLI Global spirometry reference equations, and Human Metabolome
     Database lookups.
 License: GPL-3
 Encoding: UTF-8
-LazyData: true
+Depends: R (>= 3.5.0)
 RoxygenNote: 7.3.2
 Imports: rvest, xml2, dplyr, httr, purrr
 Suggests: qs, testthat (>= 3.0.0)

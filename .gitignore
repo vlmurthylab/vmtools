@@ -1,3 +1,212 @@
+# =============================================================================
+# Lab core: identical in every lab repository. Change it in
+# vlmurthylab/project-template, not here. Additions and exceptions for this
+# repository go in the "This repository" section at the end; later rules win.
+# To re-allow a file inside an ignored folder, re-allow the folder first
+# (!src/pkg/work/). The PHI check still refuses data file types unless
+# phi-guard.conf lists the exact path in ALLOW_FILES.
+#
+# Lab rule: no subject-level data in GitHub, identified or de-identified,
+# including cohort study data. These patterns keep data, secrets and
+# regenerable files out automatically; the PHI check (hooks/pre-commit,
+# tools/phi_guard.pl) checks what does get committed. Plots, summary results
+# and small reference tables are fine to commit.
+# =============================================================================
+
+# --- Data folders (never in git) ---------------------------------------------
+# raw/ and phi/ anywhere; the others only at the top, so packages can use the
+# same names for code (for example src/pkg/work/).
+data/*
+!data/README.md
+raw/
+phi/
+/derived/
+/processed/
+/extracts/
+/work/
+
+# --- Tabular and statistical data files --------------------------------------
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.xlsm
+*.ods
+*.parquet
+*.feather
+*.arrow
+*.fst
+*.sav
+*.dta
+*.sas7bdat
+*.xpt
+*.db
+*.sqlite
+*.sqlite3
+*.duckdb
+*.dump
+*.backup
+*.pgdump
+
+# --- R -----------------------------------------------------------------------
+*.rds
+*.rda
+*.RData
+*.Rdata
+*.qs
+*.Rout
+*.nb.html
+*_cache/
+_freeze/
+.Rhistory
+.Rapp.history
+.Ruserdata
+.Rproj.user/
+
+# --- Python ------------------------------------------------------------------
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.h5
+*.hdf5
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+.venv/
+venv/
+
+# --- Imaging, ECG and signal files -------------------------------------------
+*.dcm
+*.nii
+*.nii.gz
+*.edf
+*.hea
+*.dat
+*.mat
+
+# --- Model weights, archives and installers (keep on lab storage) -----------
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.joblib
+*.keras
+*.tflite
+*.gguf
+*.bin
+*.pb
+*.msgpack
+*.mlmodel
+*.params
+*.pdparams
+*.zip
+*.tar
+*.gz
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.exe
+*.msi
+
+# --- Checksum manifests and path maps: they list real file paths ------------
+SHA256SUMS
+SHA256SUMS*.txt
+*.md5
+*.sha256
+upstream-checksums
+upstream-checksums*.txt
+STAT.baseline
+pathmap*.tsv
+pathmap*.csv
+pathmap*.txt
+
+# --- Secrets and local settings ----------------------------------------------
+.env
+.env.*
+.Renviron
+.pgpass
+.netrc
+.httr-oauth
+.git-credentials
+.aws/
+.ssh/
+id_rsa*
+id_ecdsa*
+id_ed25519*
+client_secret*.json
+credentials
+credentials.cfg
+credentials.toml
+credentials.env
+credentials.json
+credentials.csv
+credentials.txt
+credentials.ini
+credentials.yml
+credentials.yaml
+secrets
+secrets.cfg
+secrets.toml
+secrets.env
+secrets.json
+secrets.csv
+secrets.txt
+secrets.ini
+secrets.yml
+secrets.yaml
+*.pem
+*.p12
+*.pfx
+*.ppk
+*.keystore
+*.jks
+salt
+*.salt
+
+# --- Logs --------------------------------------------------------------------
+*.log
+slurm-*.out
+
+# --- Editors and operating systems -------------------------------------------
+.vscode/
+.idea/
+*.swp
+*~
+~$*
+.DS_Store
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- Allowed: summary and reference tables (not subject-level data) ---------
+!reference/**/*.csv
+!reference/**/*.tsv
+!results/tables/**/*.csv
+!results/tables/**/*.tsv
+
+# =============================================================================
+# This repository: additions and exceptions (keep the reason next to each rule)
+# =============================================================================
+# Published reference tables the package is built from (see data-raw/README.md),
+# and the internal package data built from them by data-raw/build_sysdata.R.
+# Not about individuals; listed by exact path in phi-guard.conf ALLOW_FILES.
+!data-raw/gli2012_splines.csv
+!data-raw/gli_global_splines.csv
+!R/sysdata.rda
+
+# R CMD check output
+*.Rcheck/
+
+# ---- Rules carried over unchanged from this repository's previous .gitignore ----
 .Rproj.user
 .Rhistory
 .RData

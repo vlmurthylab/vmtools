@@ -1,0 +1,10 @@
+# Lab core: identical in every lab repository; change it in
+# vlmurthylab/project-template. Keep Unix line endings on scripts that git
+# runs, so the PHI check works when checked out on Windows.
+hooks/* text eol=lf
+tools/*.pl text eol=lf
+*.sh text eol=lf
+
+# =============================================================================
+# This repository: additions (keep the reason next to each rule)
+# =============================================================================

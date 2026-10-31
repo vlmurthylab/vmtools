@@ -1,0 +1,24 @@
+#!/bin/sh
+# Lab core: identical in every lab repository; change it in
+# vlmurthylab/project-template. Checks for this repository only go in
+# hooks/pre-commit.local (a POSIX sh script), which runs afterwards if it
+# exists. It runs only on commit; a repository that needs the same check on
+# GitHub adds its own workflow.
+#
+# Refuses commits that would add data files or PHI-looking text.
+# Turn on once per clone, from the repository folder:
+#   git config core.hooksPath hooks
+# or, from R in the repository folder: source("tools/install_hooks.R")
+# The checks are in tools/phi_guard.pl; settings in phi-guard.conf.
+
+root=$(git rev-parse --show-toplevel)
+if ! command -v perl >/dev/null 2>&1; then
+  echo "pre-commit: perl not found, so the PHI check cannot run." >&2
+  echo "It comes with Git for Windows and macOS; ask in #vlmurthylab-github." >&2
+  exit 1
+fi
+perl "$root/tools/phi_guard.pl" --staged || exit 1
+
+if [ -f "$root/hooks/pre-commit.local" ]; then
+  sh "$root/hooks/pre-commit.local" || exit 1
+fi

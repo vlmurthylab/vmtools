@@ -5,3 +5,9 @@
 ^\.Rproj\.user$
 ^LICENSE$
 ^data-raw$
+^hooks$
+^tools$
+^AGENTS\.md$
+^CLAUDE\.md$
+^phi-guard\.conf$
+^\.gitattributes$

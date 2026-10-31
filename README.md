@@ -71,3 +71,16 @@ vmtools is archived on Zenodo. To cite a specific version, use its DOI (v0.2.0: 
 ## License
 
 vmtools is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [`LICENSE`](LICENSE).
+
+## Contributing
+
+This repository uses the lab's shared safeguards (from vlmurthylab/project-template): a `.gitignore`
+that keeps data out, a PHI check that runs before each commit and on GitHub, and the rules for AI
+assistants in [`AGENTS.md`](AGENTS.md). Turn the check on once in each clone, from the repository
+folder: `git config core.hooksPath hooks` (or, in R, `source("tools/install_hooks.R")`).
+
+Never put study data here, not in code, tests, examples or issues, even de-identified: tests use
+published reference values or made-up inputs. The lab-core files (`hooks/`, `tools/`, `AGENTS.md`,
+`CLAUDE.md`, `.gitattributes`, the top of `.gitignore`, `.github/`) are maintained in the template;
+`phi-guard.conf` and the bottom sections of `.gitignore` and `AGENTS.md` are this repository's own.
+

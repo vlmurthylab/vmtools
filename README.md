@@ -72,6 +72,11 @@ vmtools is archived on Zenodo. To cite a specific version, use its DOI (v0.2.0: 
 
 vmtools is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [`LICENSE`](LICENSE).
 
+The license covers the package. It does not cover the lab's safeguard files, which are
+shared by every lab repository and are not part of the package (they are in `.Rbuildignore`):
+`hooks/`, `tools/`, `phi-guard.conf`, `.github/workflows/phi-check.yml`, `AGENTS.md` and
+`CLAUDE.md`. No license is given for them.
+
 ## Contributing
 
 This repository uses the lab's shared safeguards (from vlmurthylab/project-template): a `.gitignore`

@@ -22,3 +22,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check every file for data and PHI
         run: perl tools/phi_guard.pl --all
+      - name: Test the check itself
+        run: perl tools/test_phi_guard.pl

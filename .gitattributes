@@ -10,6 +10,7 @@ tools/*.pl text eol=lf
 # would otherwise make it show as Perl).
 hooks/* linguist-vendored
 tools/phi_guard.pl linguist-vendored
+tools/test_phi_guard.pl linguist-vendored
 tools/install_hooks.R linguist-vendored
 
 # =============================================================================

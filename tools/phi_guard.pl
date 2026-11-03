@@ -34,9 +34,25 @@
 # um-nuc-cardiology-registry.
 #
 # Escapes: a line containing the text phi-ok is skipped by the PHI patterns
-# (put it in a comment). Files matching ALLOW_FILES (for example a large
-# published reference table) skip the file-type, PHI and row-level checks;
-# they never override the never-commit lists above.
+# (put it in a comment).
+#
+# Provenance tokens (written by the lab's provkit library and the registry's
+# umnc_cite()) carry machine dates and checksums in fixed forms, which would
+# otherwise look like MRNs. Only these exact tokens are removed from a line
+# before the PHI patterns run; everything else on the line, file names
+# included, is still checked:
+#   [nclr-extract:YYYYMMDD:<8 hex>]   a registry extract (always 32 characters)
+#   [t:YYYYMMDD-HHMM]                 a time
+#   [sha256:<64 hex>]                 a file checksum
+# Dates must be real-looking (19xx or 20xx, month 01-12, day 01-31) and hex
+# lower case; anything else is not a token and is checked as usual.
+# A file named extract-version.txt (in any folder) must have one line per
+# extract, each exactly "<extract token> <label>", with a label of 1 to 80
+# characters and nothing else in the file; ALLOW_FILES does not exempt it.
+#
+# Files matching ALLOW_FILES (for example a large published reference
+# table) skip the file-type, PHI and row-level checks; they never override
+# the never-commit lists above.
 #
 # Uses only Perl's standard library: Perl comes with Git for Windows and macOS.
 
@@ -134,12 +150,40 @@ my $SKIP_EXT = qr/\.(png|jpe?g|gif|tiff?|bmp|ico|pdf|woff2?|ttf|otf|eot)$/i;
 
 my %PATTERNS = (
   'an SSN'             => qr/\b\d{3}-\d{2}-\d{4}\b/,
-  'an MRN-like number' => qr/(?<![\w.,])\d{7,}(?![\w.,])/,
+  # 7+ digits not part of a longer word or number: an underscore, a comma
+  # (a CSV or JSON field) or a file extension doesn't protect them
+  # (export_1234567.csv, 1234567,45), nor does a zero fraction (1234567.0,
+  # an ID read as a number). Letters or digits next to them (hashes), a dot
+  # before them (decimals like .1234567, DOIs like journal.pone.0234567) and
+  # a non-zero fraction (1234567.25) do. Thousands commas never leave 7
+  # digits in a row. Also caught:
+  #   - 7+ digits after the letters MRN, in any case and anywhere, with any
+  #     separator (MRN1234567, patientMRN_1234567, MRN.1234567 as R's
+  #     make.names() writes "MRN 1234567");
+  #   - an MRN in hyphenated groups (two of 3 or 4 digits, then optionally
+  #     one of 2 to 4) after MRN as a word
+  #     (MRN 123-456-789, MRN-123-456-789); groups split by spaces aren't,
+  #     since summary lines such as "n_mrn 1520 1498" would be flagged. A
+  #     year range after MRN ("MRN 2019-2023") is flagged too: mark that
+  #     line phi-ok;
+  #   - X and 7+ digits on their own (X1234567), as R's make.names() and
+  #     read.csv() name a column made from an ID.
+  # Deliberately let through, to keep DOIs and decimals passing: digits after
+  # a dot (labs.1234567.csv) or before a non-zero fraction (1234567.1, as
+  # make.unique() writes a repeated ID), and other letter prefixes (pt1234567).
+  'an MRN-like number' => qr/(?<![A-Za-z0-9.])\d{7,}(?![A-Za-z0-9])(?!\.0*[1-9])|[Mm][Rr][Nn][\s_.:#=-]*\d{7,}|(?<![A-Za-z0-9_])[Mm][Rr][Nn][\s:#=_.-]*\d{3,4}-\d{3,4}(?:-\d{2,4})?(?![\d-])|(?<![A-Za-z0-9])[Xx]\d{7,}(?![A-Za-z0-9])/,
   'a phone number'     => qr/\(?\b\d{3}\)?[-. ]\d{3}[-. ]\d{4}\b/,
   'an email address'   => qr/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/,
   'a full date (ISO)'  => qr/\b(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b/,
   'a full date (US)'   => qr{\b(?:0?[1-9]|1[0-2])/(?:0?[1-9]|[12]\d|3[01])/(?:19|20)?\d{2}\b},
 );
+# Provenance tokens (see the top of this file). Removed before the PHI
+# patterns run, so only their own digits are let through.
+my $TOKEN_DATE = qr/(?:19|20)\d\d(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])/;
+my $EXTRACT_TOKEN = qr/\[nclr-extract:$TOKEN_DATE:[0-9a-f]{8}\]/;
+my $TOKEN = qr/$EXTRACT_TOKEN|\[t:$TOKEN_DATE-(?:[01]\d|2[0-3])[0-5]\d\]|\[sha256:[0-9a-f]{64}\]/;
+my $EXTRACT_LINE = qr/^$EXTRACT_TOKEN [^\s](?:[^\t]{0,78}[^\s])?$/;
+
 my @CODE_PATTERNS = ('an SSN', 'an MRN-like number', 'a phone number');
 my @NOTE_PATTERNS = (@CODE_PATTERNS, 'an email address');
 my @ALL_PATTERNS  = (@NOTE_PATTERNS, 'a full date (ISO)', 'a full date (US)');
@@ -214,6 +258,16 @@ for my $f (@files) {
   if ($text =~ /-----BEGIN (?:[A-Z]+ )*PRIVATE KEY-----\s*[A-Za-z0-9+\/=]{20,}/) {
     push @problems, "$f: contains a private key; keys are never committed"; next;
   }
+  # extract-version.txt names the registry extracts a paper used, and nothing
+  # else: every line must be exactly a token and a short label.
+  if ($f =~ m{(?:^|/)extract-version\.txt$}i) {
+    my @el = split /\r\n?|\n/, $text;
+    my ($bad) = grep { $el[$_] !~ $EXTRACT_LINE } 0 .. $#el;
+    if (!@el) { push @problems, "$f: extract-version.txt is empty; it needs one line per extract used" }
+    elsif (defined $bad) {
+      push @problems, sprintf("%s:%d: each line of extract-version.txt must be exactly an extract token and a short label, like [nclr-extract:YYYYMMDD:1a2b3c4d] main cohort", $f, $bad + 1);
+    }
+  }
   next if $f =~ $SKIP_EXT || $ok;
   next if substr($text, 0, 8000) =~ /\0/;      # binary
   # Embedded images and fonts (base64 data URIs) cannot hold readable data but
@@ -233,7 +287,7 @@ for my $f (@files) {
   my @pats = $f =~ $CODE_EXT ? @CODE_PATTERNS : $f =~ $NOTE_EXT ? @NOTE_PATTERNS : @ALL_PATTERNS;
   my %seen;
   for my $i (0 .. $#lines) {
-    my $line = $lines[$i];
+    my $line = $lines[$i] =~ s/$TOKEN/[token]/gr;   # provenance tokens only
     next if $line =~ /phi-ok/;
     next if $line =~ m{"image/(png|jpeg|gif|svg\+xml)"};   # notebook plot data
     for my $p (@pats) {

@@ -24,6 +24,30 @@ my $hex8  = '1a2b' . '3c4d';
 my $sha   = join '', ('0123456789abcdef') x 4;   # 64 hex
 my $mrn   = '123' . '4567';                  # 7 digits
 
+my $bytes = '2016' . '6090';                 # a package size in bytes
+my $ms    = '1726' . '0000' . '00000';       # a build time in milliseconds
+
+# Made-up lock files, shaped like the ones uv and pixi write.
+my $uv_entry = "{ url = \"https://files.example.org/demo-1.0.tar.gz\", hash = \"sha256:$sha\", size = $bytes, upload-time = \"2024-11-02T17:48:55.832Z\" }";
+my $uv_lock  = "version = 1\nrevision = 3\nrequires-python = \">=3.11\"\n\n[[package]]\nname = \"demo\"\n"
+             . "version = \"1.0\"\nsource = { registry = \"https://pypi.org/simple\" }\nsdist = $uv_entry\n"
+             . "wheels = [\n    $uv_entry,\n]\n";
+my $pixi_lock = "version: 6\nenvironments:\n  default:\n    channels:\n    - url: https://conda.anaconda.org/conda-forge/\n"
+              . "packages:\n- conda: https://conda.anaconda.org/conda-forge/noarch/demo-1.0-pyh0_0.conda\n"
+              . "  sha256: $sha\n  md5: " . substr($sha, 0, 32) . "\n  license: MIT\n  size: $bytes\n  timestamp: $ms\n";
+
+# 250 records (over the default MAX_TABLE_ROWS of 200), as JSON and as YAML.
+my $json_recs = join(",\n", map { "    {\n      \"name\": \"p$_\",\n      \"version\": \"1.0\"\n    }" } 1 .. 250);
+my $yaml_recs = join('', map { "- name: p$_\n  version: 1.0\n" } 1 .. 250);
+my $npm_start = "{\n  \"name\": \"demo\",\n  \"version\": \"1.0.0\",\n  \"lockfileVersion\": 3,\n";
+# The same records as packages, each with a checksum, as lock files write them.
+my $b64 = join '', ('AbCdEfGh') x 11;        # base64, 88 characters
+my $json_pkgs = join(",\n", map { "    {\n      \"name\": \"p$_\",\n      \"version\": \"1.0\",\n      \"integrity\": \"sha512-$b64\"\n    }" } 1 .. 250);
+my $yaml_pkgs = join('', map { "- name: p$_\n  version: 1.0\n  hash:\n    md5: " . substr($sha, 0, 32) . "\n" } 1 .. 250);
+# Poetry before 1.2: no header, and a [metadata.files] list of every download.
+my $poetry_old = "[[package]]\nname = \"demo\"\nversion = \"1.0\"\n\n[metadata.files]\n"
+               . join('', map { my $p = $_; "p$p = [\n" . join('', map { "    {file = \"p$p-1.0-py3-$_.whl\", hash = \"sha256:$sha\"},\n" } 1 .. 5) . "]\n" } 1 .. 60);
+
 my $extract = "[nclr-extract:$day:$hex8]";
 my $time    = "[t:$day-1430]";
 my $sum     = "[sha256:$sha]";
@@ -86,6 +110,65 @@ my @cases = (
                                      { 'extract-version.txt' => "$extract cohort $mrn\n" }, 0, 'MRN-like'],
   ['ALLOW_FILES does not exempt extract-version.txt',
                                      { 'extract-version.txt' => "notes\n", 'phi-guard.conf' => "ALLOW_FILES=extract-version.txt\n" }, 0, 'each line'],
+  # Lock files: package sizes and build times pass; nothing else is exempt.
+  ['uv.lock package sizes pass',     { 'uv.lock' => $uv_lock, 'sub/uv.lock' => $uv_lock }, 1],
+  ['uv.lock MRN elsewhere fails',    { 'uv.lock' => $uv_lock =~ s/name = "demo"/name = "demo-$mrn"/r }, 0, 'uv.lock:6: looks like an MRN'],
+  ['uv.lock MRN after a size fails', { 'uv.lock' => $uv_lock =~ s/upload-time = "[^"]*"/upload-time = "$mrn"/r }, 0, 'MRN-like'],
+  ['uv.lock size outside a package entry fails',
+                                     { 'uv.lock' => "$uv_lock\n[extra]\nsize = $mrn\n" }, 0, 'MRN-like'],
+  ['a file only named uv.lock fails', { 'uv.lock' => "id,age\n$mrn,45\n" }, 0, 'MRN-like'],
+  ['pixi.lock sizes and build times pass',
+                                     { 'pixi.lock' => $pixi_lock }, 1],
+  ['pixi.lock MRN elsewhere fails',  { 'pixi.lock' => $pixi_lock =~ s/license: MIT/license: $mrn/r }, 0, 'MRN-like'],
+  ['pixi.lock size with more on the line fails',
+                                     { 'pixi.lock' => $pixi_lock =~ s/size: $bytes/size: $bytes $mrn/r }, 0, 'MRN-like'],
+  ['a file only named pixi.lock fails', { 'pixi.lock' => "records:\n  size: $mrn\n" }, 0, 'MRN-like'],
+  # The exact forms each tool writes, and nothing looser.
+  ['uv.lock from uv before 0.7 passes',
+                                     { 'uv.lock' => $uv_lock =~ s/, upload-time = "[^"]*" \}/ }/gr }, 1],
+  ['uv.lock with Windows line endings passes',
+                                     { 'uv.lock' => $uv_lock =~ s/\n/\r\n/gr, 'pixi.lock' => $pixi_lock =~ s/\n/\r\n/gr }, 1],
+  ['uv.lock MRN in a package URL fails',
+                                     { 'uv.lock' => $uv_lock =~ s{demo-1\.0\.tar\.gz}{demo-$mrn.tar.gz}r }, 0, 'MRN-like'],
+  ['uv.lock entry not for a package archive fails',
+                                     { 'uv.lock' => $uv_lock =~ s{demo-1\.0\.tar\.gz}{rows}r }, 0, 'MRN-like'],
+  ['uv.lock size with a decimal fails', { 'uv.lock' => $uv_lock =~ s/size = $bytes/size = $mrn.0/r }, 0, 'MRN-like'],
+  ['a lock file name in other case gets every check',
+                                     { 'UV.lock' => $uv_lock, 'Pixi.lock' => $pixi_lock }, 0, 'MRN-like'],
+  ['a lock file that starts another way gets every check',
+                                     { 'uv.lock' => "\n$uv_lock" }, 0, 'MRN-like'],
+  ['pixi.lock size indented further fails',
+                                     { 'pixi.lock' => $pixi_lock =~ s/  size: /    size: /r }, 0, 'MRN-like'],
+  ['pixi.lock size indented by a tab fails',
+                                     { 'pixi.lock' => $pixi_lock =~ s/  size: /\tsize: /r }, 0, 'MRN-like'],
+  ['pixi.lock size outside a package entry fails',
+                                     { 'pixi.lock' => "version: 6\nnotes: |\n  size: $mrn\n", 'sub/pixi.lock' => "version: 6\n  size: $mrn\n" }, 0, 'MRN-like'],
+  ['pixi.lock size after a package entry ends fails',
+                                     { 'pixi.lock' => "$pixi_lock" . "records:\n  size: $mrn\n" }, 0, 'pixi.lock:14: looks like an MRN'],
+  ['pixi.lock timestamp of the wrong length fails',
+                                     { 'pixi.lock' => $pixi_lock =~ s/timestamp: $ms/timestamp: $mrn/r }, 0, 'MRN-like'],
+  # Lock files skip the record counts only when their records carry checksums.
+  ['lock files with many checksummed packages pass',
+                                     { 'package-lock.json' => "$npm_start  \"packages\": [\n$json_pkgs\n  ]\n}\n",
+                                       'sub/conda-lock.yml' => "# This lock file was generated by conda-lock.\npackage:\n$yaml_pkgs",
+                                       'poetry.lock' => $poetry_old }, 1],
+  ['JSON records saved as package-lock.json fail',
+                                     { 'package-lock.json' => "[\n$json_recs\n]\n" }, 0, 'looks like row-level data'],
+  ['JSON records with a lock file\'s first lines fail',
+                                     { 'package-lock.json' => "$npm_start  \"packages\": [\n$json_recs\n  ]\n}\n" }, 0, 'looks like row-level data'],
+  ['YAML records saved as conda-lock.yml fail',
+                                     { 'sub/conda-lock.yml' => "package:\n$yaml_recs" }, 0, 'looks like row-level data'],
+  ['records with too few checksums fail',
+                                     { 'renv.lock' => "{\n  \"Hash\": \"$sha\",\n  \"x\": [\n$json_recs\n]}\n" }, 0, 'looks like row-level data'],
+  ['checksums all on one line do not count',
+                                     { 'renv.lock' => "{\n  \"note\": \"" . join(' ', (substr($sha, 0, 32)) x 150) . "\",\n  \"x\": [\n$json_recs\n]}\n" }, 0, 'looks like row-level data'],
+  ['HTML table rows under a lock file name fail',
+                                     { 'uv.lock' => "version = 1\n# $sha\n<table>\n" . join('', map { "<tr><td>p$_</td></tr>\n<!-- $sha -->\n" } 1 .. 250) . "</table>\n" }, 0, 'HTML table rows'],
+  ['pixi environment references are not records',
+                                     { 'pixi.lock' => "version: 6\nenvironments:\n" . join('', map { my $e = $_; "  e$e:\n    packages:\n      linux-64:\n" . join('', map { "      - conda: https://conda.example.org/p$_-1.0.conda\n" } 1 .. 60) } 1 .. 5) . "packages:\n- conda: https://conda.example.org/p1-1.0.conda\n  sha256: $sha\n" }, 1],
+  ['a lock file name in other case gets the record counts',
+                                     { 'PACKAGE-LOCK.JSON' => "$npm_start  \"packages\": [\n$json_pkgs\n  ]\n}\n" }, 0, 'looks like row-level data'],
+  ['sizes in other files fail',      { 'docs/notes.md' => "size = $mrn\n", 'results/out.yml' => "  timestamp: $mrn\n" }, 0, 'MRN-like'],
 );
 
 my ($pass, $fail) = (0, 0);

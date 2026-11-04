@@ -50,6 +50,21 @@
 # extract, each exactly "<extract token> <label>", with a label of 1 to 80
 # characters and nothing else in the file; ALLOW_FILES does not exempt it.
 #
+# Lock files from uv (uv.lock) and pixi (pixi.lock) record each package
+# download's size in bytes, and pixi its build time in milliseconds: long
+# numbers that would otherwise look like MRNs. Only those numbers are blanked,
+# only in a field of the exact form the tool writes (in uv.lock, the size in a
+# { url = "https://....whl|.tar.gz|.zip", hash = "sha256:<64 hex>", size = N
+# entry; in pixi.lock, a line that is exactly two spaces then "size: <digits>"
+# or "timestamp: <13 digits>", inside a "- conda: https://..." or
+# "- pypi: https://..." package entry), and only when the file's name is exactly
+# uv.lock or pixi.lock and its first line is the one that tool writes
+# ("version = N" or "version: N"). Everything else in the file, including the
+# rest of each of those lines, is still checked. A file with one of those names
+# that starts any other way gets every check; one that does start that way but
+# isn't a real lock file can still slip numbers through in those exact fields,
+# so read lock files in review like any other file.
+#
 # Files matching ALLOW_FILES (for example a large published reference
 # table) skip the file-type, PHI and row-level checks; they never override
 # the never-commit lists above.
@@ -139,12 +154,34 @@ my $WEIGHTS  = qr/\.(pt|pth|ckpt|safetensors|onnx|joblib|keras|tflite|gguf|bin|p
 my $PACKED   = qr/\.(zip|gz|tgz|bz2|xz|zst|7z|rar|tar)$/i;   # can hide anything
 my $CODE_EXT = qr/\.(r|py|sql|sh|ps1|bat|jl|m|js|ts|c|cc|cpp|h|java|go|rs|do|sas|sbatch|slurm|yml|yaml|toml)$/i;
 my $ROW_SKIP = qr/\.(r|py|sql|sh|ps1|bat|jl|m|js|ts|c|cc|cpp|h|java|go|rs|do|sas|sbatch|slurm|svg|eps|ps)$/i;  # hand-written code; vector figures
-# Dependency lock files, by exact name: lists of software packages whose many
-# '}, {' entries look like data records. They skip only the record and list
-# counts below; every other check still applies.
+# Dependency lock files, by exact name (letter case included): lists of
+# software packages whose many '}, {' entries look like data records. Real
+# lock files hold a checksum for nearly every package, so a lock file skips
+# the JSON and YAML record counts below only when it has at least one line
+# holding a checksum for every two records; data saved under a lock file's
+# name without checksums gets every check. Records that each carry a hash (a
+# hashed ID column) can still pass, so lock files are read in review like
+# any other file. Every other check always applies.
 my $LOCKFILE = qr{(?:^|/)(?:uv|poetry|renv|Pipfile|yarn|pixi|Cargo|Gemfile|composer|flake|bun|pdm|mix)\.lock$
                  |(?:^|/)(?:package-lock|npm-shrinkwrap|packages\.lock)\.json$
-                 |(?:^|/)(?:pnpm-lock|conda-lock)\.ya?ml$}xi;
+                 |(?:^|/)(?:pnpm-lock|conda-lock)\.ya?ml$}x;
+# A checksum: 32 to 128 lower-case hex digits (MD5, SHA-1, SHA-256, SHA-512),
+# or an npm-style "sha512-<base64>" integrity value.
+my $CHECKSUM = qr{(?<![0-9A-Za-z])[0-9a-f]{32,128}(?![0-9A-Za-z])|\bsha(?:1|256|384|512)-[A-Za-z0-9+/]{27,}={0,2}};
+# Lock files whose package sizes and build times are blanked before the PHI
+# patterns (see the top of this file): by exact name, the first line the tool
+# writes, and the field holding the number (the part before the number is $1).
+my %LOCK_NUMBERS = (
+  # uv: the size of a downloaded wheel or source archive. uv before 0.7 ends
+  # the entry right after the size ("size = N }"); later versions add a comma.
+  'uv.lock'   => [qr/^version = \d+$/,
+                  qr/(\{ url = "https:\/\/[^"\s]+\.(?:whl|tar\.gz|zip)", hash = "sha256:[0-9a-f]{64}", size = )\d+(?=,| \})/],
+  # pixi: a package's size, or its build time in milliseconds (13 digits),
+  # each on its own line indented by exactly two spaces, inside a package
+  # entry (the lines under "- conda: https://..." or "- pypi: https://...").
+  'pixi.lock' => [qr/^version: \d+$/,  qr/^(  (?:size: (?=\d+$)|timestamp: (?=\d{13}$)))\d+$/,
+                  qr/^- (?:conda|pypi): https:\/\/\S+$/],
+);
 my $NOTE_EXT = qr/\.(md|markdown|rmd|qmd|rst|tex|bib|cff)$/i;   # notes and documents you write
 my $SKIP_EXT = qr/\.(png|jpe?g|gif|tiff?|bmp|ico|pdf|woff2?|ttf|otf|eot)$/i;
 
@@ -280,6 +317,14 @@ for my $f (@files) {
     $text =~ s{<style\b[^>]*>.*?</style>}{}gis;
   }
   my @lines = split /\r\n?|\n/, $text;          # Windows, old Mac and Unix line endings
+  # A uv or pixi lock file, if it really is one: the field whose number to blank.
+  my ($lock_name) = $f =~ m{(?:^|/)(uv\.lock|pixi\.lock)$};
+  my $lock_field = $lock_name && @lines && $lines[0] =~ $LOCK_NUMBERS{$lock_name}[0]
+                 ? $LOCK_NUMBERS{$lock_name}[1] : undef;
+  # For pixi, the line that opens a package entry; the entry runs until the
+  # next line that isn't indented.
+  my $lock_entry = $lock_field ? $LOCK_NUMBERS{$lock_name}[2] : undef;
+  my $in_entry = 0;
 
   # PHI-looking text: the first hit of each pattern in each file.
   # Code and notes are written by hand, where dates are usually harmless (a
@@ -288,6 +333,8 @@ for my $f (@files) {
   my %seen;
   for my $i (0 .. $#lines) {
     my $line = $lines[$i] =~ s/$TOKEN/[token]/gr;   # provenance tokens only
+    $in_entry = $line =~ $lock_entry ? 1 : $line =~ /^\S/ ? 0 : $in_entry if $lock_entry;
+    $line =~ s/$lock_field/${1}[n]/g if $lock_field && (!$lock_entry || $in_entry);   # lock-file sizes and build times only
     next if $line =~ /phi-ok/;
     next if $line =~ m{"image/(png|jpeg|gif|svg\+xml)"};   # notebook plot data
     for my $p (@pats) {
@@ -348,7 +395,7 @@ for my $f (@files) {
       # (Notebooks are skipped here: their cells are JSON records, and the
       # outputs check above covers what they can leak.)
       my %count;
-      unless ($f =~ /\.ipynb$/i || $f =~ $LOCKFILE) {
+      unless ($f =~ /\.ipynb$/i) {
         %count = (
           'JSON records'      => scalar(() = $rtext =~ /\}\s*,\s*\{/g),
           'JSON array rows'   => scalar(() = $rtext =~ /\]\s*,\s*\[/g),
@@ -361,6 +408,18 @@ for my $f (@files) {
           $longest = $k if $k > $longest;
         }
         $count{'values in one list'} = $longest;
+        # A lock file whose records carry checksums lists packages, not people.
+        # In a lock file, a list item that only names a package by its URL
+        # (pixi's "- conda: https://..." lines, repeated in every environment)
+        # is a reference, not a record. If there is at least one line holding a
+        # checksum for every two records, the JSON and YAML record counts are
+        # skipped; the other counts always apply.
+        if ($f =~ $LOCKFILE) {
+          $count{'YAML list records'} = () = $rtext =~ /^\s*-\s+(?!(?:conda|pypi):[ \t]+\S+[ \t]*$)[\w"']+\s*:/mg;
+          my ($records) = sort { $b <=> $a } @count{'JSON records', 'YAML list records'};
+          my $sums = () = $rtext =~ /^[^\n]*?(?:$CHECKSUM)[^\n]*/mg;   # lines holding a checksum
+          delete @count{'JSON records', 'YAML list records'} if 2 * $sums >= $records;
+        }
       }
       for my $what (sort keys %count) {
         if ($count{$what} > $N) {

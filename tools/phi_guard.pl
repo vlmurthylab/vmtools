@@ -65,6 +65,23 @@
 # isn't a real lock file can still slip numbers through in those exact fields,
 # so read lock files in review like any other file.
 #
+# renv.lock records each package's DESCRIPTION fields: its title and
+# description, its authors and maintainer (with email addresses), its
+# release date and web addresses, which trip the PHI patterns. In a file
+# named exactly renv.lock whose first two lines are the ones renv writes
+# ("{" then '  "R": {'), two kinds of value are blanked:
+#   - each package's text: a line inside the "Packages" section that is
+#     exactly six spaces, "<key>": "<text>" and an optional comma. Not
+#     blanked, so still checked: "RemoteUrl" (the folder a local package was
+#     installed from), and any value that is a path or local source
+#     ("local::...", "file:...", "/...", "~...", "C:\...", "\\server\...").
+#   - a package repository's web address in renv's header, before "Packages":
+#     a line that is exactly eight spaces, "URL": "https://..." with no "@" in
+#     it (which may be a dated snapshot).
+# The keys and every other line (the rest of renv's header, arrays such as
+# "Requirements") are still checked, and renv.lock gets the record counts
+# like any other file.
+#
 # Files matching ALLOW_FILES (for example a large published reference
 # table) skip the file-type, PHI and row-level checks; they never override
 # the never-commit lists above.
@@ -154,20 +171,27 @@ my $WEIGHTS  = qr/\.(pt|pth|ckpt|safetensors|onnx|joblib|keras|tflite|gguf|bin|p
 my $PACKED   = qr/\.(zip|gz|tgz|bz2|xz|zst|7z|rar|tar)$/i;   # can hide anything
 my $CODE_EXT = qr/\.(r|py|sql|sh|ps1|bat|jl|m|js|ts|c|cc|cpp|h|java|go|rs|do|sas|sbatch|slurm|yml|yaml|toml)$/i;
 my $ROW_SKIP = qr/\.(r|py|sql|sh|ps1|bat|jl|m|js|ts|c|cc|cpp|h|java|go|rs|do|sas|sbatch|slurm|svg|eps|ps)$/i;  # hand-written code; vector figures
-# Dependency lock files, by exact name (letter case included): lists of
-# software packages whose many '}, {' entries look like data records. Real
-# lock files hold a checksum for nearly every package, so a lock file skips
-# the JSON and YAML record counts below only when it has at least one line
-# holding a checksum for every two records; data saved under a lock file's
-# name without checksums gets every check. Records that each carry a hash (a
-# hashed ID column) can still pass, so lock files are read in review like
-# any other file. Every other check always applies.
-my $LOCKFILE = qr{(?:^|/)(?:uv|poetry|renv|Pipfile|yarn|pixi|Cargo|Gemfile|composer|flake|bun|pdm|mix)\.lock$
-                 |(?:^|/)(?:package-lock|npm-shrinkwrap|packages\.lock)\.json$
-                 |(?:^|/)(?:pnpm-lock|conda-lock)\.ya?ml$}x;
-# A checksum: 32 to 128 lower-case hex digits (MD5, SHA-1, SHA-256, SHA-512),
-# or an npm-style "sha512-<base64>" integrity value.
-my $CHECKSUM = qr{(?<![0-9A-Za-z])[0-9a-f]{32,128}(?![0-9A-Za-z])|\bsha(?:1|256|384|512)-[A-Za-z0-9+/]{27,}={0,2}};
+# Lock files of the lab's Python package tools (uv, pixi), by exact name
+# (letter case included), that start the way the tool writes them ("version =
+# N" or "version: N"): lists of software packages whose many '}, {' or
+# '- key:' entries look like data records. Every downloaded package in a real
+# uv.lock or pixi.lock carries a checksum, so such a file skips the JSON and
+# YAML record counts below only when it has at least one line holding a
+# package checksum for every two records. A package checksum is a line in
+# exactly the form one of these tools writes (either form counts in either
+# file): uv's '{ ..., hash = "sha256:<hex>"' entry (after "{" or ","), uv's
+# 'source = { git = "...#<commit>"' line for a git dependency, or pixi's
+# line that is only "sha256: <hex>" or "md5: <hex>". A hash anywhere else
+# doesn't count, whatever its key ("pid_hash", "mrn.sha256") and whatever its
+# form (bare hex, "sha256:<hex>", a provenance token), so data saved under a
+# lock file's name gets every check. renv.lock needs no record-count
+# allowance (it lists packages by name, which never looks like records), and
+# other tools' lock files (npm, composer, poetry and the like) get every
+# check; a project that needs one asks Venk to list it in ALLOW_FILES.
+# Lock files are still read in review like any other file.
+my $PKG_CHECKSUM = qr{(?m:^)[ \t]*(?:sha256:[ ][0-9a-f]{64}|md5:[ ][0-9a-f]{32})[ \t]*\r?(?m:$)
+                     |[\{,][ \t]*hash[ ]=[ ]"sha256:[0-9a-f]{64}"
+                     |source[ ]=[ ]\{[ ]git[ ]=[ ]"[^"\n]*\#[0-9a-f]{40}"}x;
 # Lock files whose package sizes and build times are blanked before the PHI
 # patterns (see the top of this file): by exact name, the first line the tool
 # writes, and the field holding the number (the part before the number is $1).
@@ -325,6 +349,11 @@ for my $f (@files) {
   # next line that isn't indented.
   my $lock_entry = $lock_field ? $LOCK_NUMBERS{$lock_name}[2] : undef;
   my $in_entry = 0;
+  # A renv.lock, if it really is one (named exactly renv.lock, starting the way
+  # renv writes it): each package's text values are blanked (see the top of
+  # this file).
+  my $renv = $f =~ m{(?:^|/)renv\.lock$} && @lines >= 2 && $lines[0] eq '{' && $lines[1] eq '  "R": {';
+  my ($in_packages, $past_packages) = (0, 0);
 
   # PHI-looking text: the first hit of each pattern in each file.
   # Code and notes are written by hand, where dates are usually harmless (a
@@ -335,6 +364,20 @@ for my $f (@files) {
     my $line = $lines[$i] =~ s/$TOKEN/[token]/gr;   # provenance tokens only
     $in_entry = $line =~ $lock_entry ? 1 : $line =~ /^\S/ ? 0 : $in_entry if $lock_entry;
     $line =~ s/$lock_field/${1}[n]/g if $lock_field && (!$lock_entry || $in_entry);   # lock-file sizes and build times only
+    if ($renv) {                                    # renv.lock: package text values only
+      $past_packages ||= $in_packages && $line =~ /^  \S/;
+      $in_packages = $line eq '  "Packages": {' ? 1 : $line =~ /^  \S/ ? 0 : $in_packages;
+      # Every text value but RemoteUrl, the folder a local package was
+      # installed from, which is checked like any path.
+      # A value that is a path or a local source ("local::...", "file:...",
+      # "/...", "~...", "C:\..." or a network share "\\server\...") is checked
+      # too, whatever its key.
+      $line =~ s/^(      "(?!RemoteUrl")[^"\\]+": )"(?!local::|file:|[\/~]|[A-Za-z]:[\\\/]|\\\\)(?:[^"\\]|\\.)*"(,?)$/$1"[text]"$2/ if $in_packages;
+      # A package repository's web address in renv's header, which may be a
+      # dated snapshot such as https://packagemanager.posit.co/cran/2024-06-01
+      # (one with "@" in it, which could hold a login, is checked).
+      $line =~ s{^(        "URL": )"https://[^"\s@]*"(,?)$}{$1"[url]"$2} if !$in_packages && !$past_packages;
+    }
     next if $line =~ /phi-ok/;
     next if $line =~ m{"image/(png|jpeg|gif|svg\+xml)"};   # notebook plot data
     for my $p (@pats) {
@@ -408,16 +451,18 @@ for my $f (@files) {
           $longest = $k if $k > $longest;
         }
         $count{'values in one list'} = $longest;
-        # A lock file whose records carry checksums lists packages, not people.
+        # A lock file whose records carry package checksums lists packages, not people.
         # In a lock file, a list item that only names a package by its URL
         # (pixi's "- conda: https://..." lines, repeated in every environment)
         # is a reference, not a record. If there is at least one line holding a
-        # checksum for every two records, the JSON and YAML record counts are
-        # skipped; the other counts always apply.
-        if ($f =~ $LOCKFILE) {
-          $count{'YAML list records'} = () = $rtext =~ /^\s*-\s+(?!(?:conda|pypi):[ \t]+\S+[ \t]*$)[\w"']+\s*:/mg;
+        # package checksum for every two records, the JSON and YAML record
+        # counts are skipped; the other counts always apply.
+        # ($lock_field is set for a real uv.lock or pixi.lock: exact name and
+        # the tool's first line; see %LOCK_NUMBERS.)
+        if ($lock_field) {
+          $count{'YAML list records'} = () = $rtext =~ /^\s*-\s+(?!(?:conda|pypi):[ \t]+\S+[ \t]*\r?$)[\w"']+\s*:/mg;
           my ($records) = sort { $b <=> $a } @count{'JSON records', 'YAML list records'};
-          my $sums = () = $rtext =~ /^[^\n]*?(?:$CHECKSUM)[^\n]*/mg;   # lines holding a checksum
+          my $sums = () = $rtext =~ /^[^\n]*?(?:$PKG_CHECKSUM)[^\n]*/mg;   # lines holding a package checksum
           delete @count{'JSON records', 'YAML list records'} if 2 * $sums >= $records;
         }
       }
@@ -463,13 +508,27 @@ for my $f (@files) {
 exit 0 unless @problems;
 
 print STDERR "phi-guard: stopped. These look like data or PHI:\n";
-print STDERR "  $_\n" for @problems;
+# A lock file gets one note, after its last finding: phi-ok can't go in a
+# file the tool rewrites. (Findings for one file come together.)
+my $LOCKISH = qr{(?:^|/)(?:renv|uv|pixi|poetry|pdm|Pipfile|yarn|Cargo|Gemfile|composer|mix|flake|bun)\.lock$
+                |(?:^|/)(?:package-lock|npm-shrinkwrap|packages\.lock)\.json$
+                |(?:^|/)(?:pnpm-lock|conda-lock)\.ya?ml$}x;
+for my $i (0 .. $#problems) {
+  print STDERR "  $problems[$i]\n";
+  my ($pf)   = $problems[$i] =~ /^([^:]+)/;
+  my ($next) = ($problems[$i + 1] // '') =~ /^([^:]+)/;
+  print STDERR "    (A lock file: never add phi-ok to it, as the tool rewrites it. What to do:\n"
+             . "    https://github.com/vlmurthylab/project-template#lock-files-and-the-phi-check)\n"
+    if $pf =~ $LOCKISH && ($next // '') ne $pf;
+}
+
 print STDERR <<'EOT';
 
 Remove them, or move the data to lab storage. Then:
   - "looks like" a PHI pattern, but the line isn't about a person (a random
     seed, a published sample size): add the text phi-ok in a comment on that
-    line, and say so in the commit message;
+    line, and say so in the commit message. Never in a lock file (see the
+    note above). AI assistants add phi-ok only as AGENTS.md allows;
   - a notebook with outputs: clear them (for example with nbstripout);
   - a large published table that is not about individuals (a lookup table,
     genome-wide summary statistics): ask Venk to list it in ALLOW_FILES in

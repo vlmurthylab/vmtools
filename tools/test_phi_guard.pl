@@ -39,15 +39,49 @@ my $pixi_lock = "version: 6\nenvironments:\n  default:\n    channels:\n    - url
 # 250 records (over the default MAX_TABLE_ROWS of 200), as JSON and as YAML.
 my $json_recs = join(",\n", map { "    {\n      \"name\": \"p$_\",\n      \"version\": \"1.0\"\n    }" } 1 .. 250);
 my $yaml_recs = join('', map { "- name: p$_\n  version: 1.0\n" } 1 .. 250);
-my $npm_start = "{\n  \"name\": \"demo\",\n  \"version\": \"1.0.0\",\n  \"lockfileVersion\": 3,\n";
-# The same records as packages, each with a checksum, as lock files write them.
-my $b64 = join '', ('AbCdEfGh') x 11;        # base64, 88 characters
-my $json_pkgs = join(",\n", map { "    {\n      \"name\": \"p$_\",\n      \"version\": \"1.0\",\n      \"integrity\": \"sha512-$b64\"\n    }" } 1 .. 250);
 my $yaml_pkgs = join('', map { "- name: p$_\n  version: 1.0\n  hash:\n    md5: " . substr($sha, 0, 32) . "\n" } 1 .. 250);
-# Poetry before 1.2: no header, and a [metadata.files] list of every download.
-my $poetry_old = "[[package]]\nname = \"demo\"\nversion = \"1.0\"\n\n[metadata.files]\n"
-               . join('', map { my $p = $_; "p$p = [\n" . join('', map { "    {file = \"p$p-1.0-py3-$_.whl\", hash = \"sha256:$sha\"},\n" } 1 .. 5) . "]\n" } 1 .. 60);
-
+# A uv.lock as uv writes it: per package, two wheels, each with its sha256
+# (one "}, {" between them), and four dependencies with no hash (three more).
+# That is 2 package checksums for 4 records: exactly the 1-in-2 the rule needs.
+my $uv_pkg = sub { my ($p, $wheels, $deps) = @_;
+  "\n[[package]]\nname = \"p$p\"\nversion = \"1.0\"\nsource = { registry = \"https://pypi.org/simple\" }\n"
+  . "dependencies = [\n" . join(",\n", map { "    { name = \"d$_\" }" } 1 .. $deps) . ",\n]\n"
+  . "wheels = [\n" . join(",\n", map { "    { url = \"https://files.example.org/p$p-1.0-$_.whl\", hash = \"sha256:$sha\", size = $bytes }" } 1 .. $wheels) . ",\n]\n" };
+my $uv_head = "version = 1\nrequires-python = \">=3.11\"\n";
+my $uv_big  = $uv_head . join('', map { $uv_pkg->($_, 2, 4) } 1 .. 120);
+my $uv_thin = $uv_head . join('', map { $uv_pkg->($_, 1, 4) } 1 .. 120);   # 1 checksum for 3 records
+# Hashed IDs in the self-describing "sha256:<hex>" form, and as provenance tokens.
+my $prefixed_json = join(",\n", map { "    {\n      \"pid_hash\": \"sha256:$sha\",\n      \"age\": 40\n    }" } 1 .. 250);
+my $prefixed_yaml = join('', map { "- pid_hash: sha256:$sha\n  age: 40\n" } 1 .. 250);
+my $prefixed_toml = join(",\n", map { "{\n  pid_hash = \"sha256:$sha\",\n  age = 40\n}" } 1 .. 250);
+my $oneline_toml = join(",\n", map { "{ mrn.hash = \"sha256:$sha\",\n  age = 40\n}" } 1 .. 250);
+my $hash_json     = join(",\n", map { "    { \"hash\": \"sha256:$sha\",\n      \"age\": 40\n    }" } 1 .. 250);
+my $bare_uv       = join(",\n", map { "{ hash = \"$sha\",\n  age = 40\n}" } 1 .. 250);
+my $dash_yaml     = join('', map { "- sha256: $sha\n  age: 40\n" } 1 .. 250);
+my $json_sha_key  = join(",\n", map { "    {\n      \"sha256\": \"$sha\",\n      \"age\": 40\n    }" } 1 .. 250);
+my $trailing_yaml = join('', map { "- name: p$_\n  sha256: $sha extra\n" } 1 .. 250);
+# pixi packages as pixi writes them: the sha256 line on its own.
+my $pixi_pkgs     = join('', map { "- name: p$_\n  version: 1.0\n  sha256: $sha\n" } 1 .. 250);
+# One record past 1 in 2: $uv_big plus one more record, no more checksums.
+my $uv_short = "$uv_big\nextra = [\n    { name = \"x\" },\n    { name = \"y\" },\n]\n";
+my $token_json    = join(",\n", map { "    {\n      \"file\": \"[sha256:$sha]\",\n      \"age\": 40\n    }" } 1 .. 250);
+# A renv.lock as renv 1.x writes it: a package's DESCRIPTION fields include
+# an email, a release date and a long number; the header a dated snapshot URL.
+my $email = 'ann' . '@' . 'example.org';
+my $iso   = '2024' . '-01-15';
+my $renv_pkg = "    \"demo\": {\n      \"Package\": \"demo\",\n      \"Version\": \"1.0\",\n"
+             . "      \"Authors\@R\": \"person(\\\"Ann\\\", \\\"Lee\\\", email = \\\"$email\\\")\",\n"
+             . "      \"Maintainer\": \"Ann Lee <$email>\",\n      \"Date\": \"$iso\",\n"
+             . "      \"Description\": \"See doi:10.1000/$mrn for details.\",\n"
+             . "      \"Requirements\": [\n        \"R\"\n      ],\n      \"Hash\": \"" . substr($sha, 0, 32) . "\"\n    }\n";
+my $renv_head = "{\n  \"R\": {\n    \"Version\": \"4.4.2\",\n    \"Repositories\": [\n      {\n        \"Name\": \"RSPM\",\n"
+              . "        \"URL\": \"https://packagemanager.posit.co/cran/$iso\"\n      }\n    ]\n  },\n";
+my $renv_ok = "$renv_head  \"Packages\": {\n$renv_pkg  }\n}\n";
+# Made-up de-identified rows, each with a hashed ID (vlmurthylab/project-template#14).
+my $hashed_json = join(",\n", map { "    {\n      \"pid_hash\": \"$sha\",\n      \"age\": 40,\n      \"ldl\": 120\n    }" } 1 .. 250);
+my $hashed_bare = join(",\n", map { "    {\n      \"name\": \"p$_\",\n      \"type\": \"outpatient\",\n      \"size\": 3,\n      \"hash\": \"$sha\"\n    }" } 1 .. 250);
+my $hashed_dots = join(",\n", map { "    {\n      \"mrn.sha256\": \"$sha\",\n      \"age\": 40\n    }" } 1 .. 250);
+my $hashed_yaml = join('', map { "- name: p$_\n  age: 40\n  mrn_sha256: $sha\n" } 1 .. 250);
 my $extract = "[nclr-extract:$day:$hex8]";
 my $time    = "[t:$day-1430]";
 my $sum     = "[sha256:$sha]";
@@ -149,31 +183,176 @@ my @cases = (
                                      { 'pixi.lock' => $pixi_lock =~ s/timestamp: $ms/timestamp: $mrn/r }, 0, 'MRN-like'],
   # Lock files skip the record counts only when their records carry checksums.
   ['lock files with many checksummed packages pass',
-                                     { 'package-lock.json' => "$npm_start  \"packages\": [\n$json_pkgs\n  ]\n}\n",
-                                       'sub/conda-lock.yml' => "# This lock file was generated by conda-lock.\npackage:\n$yaml_pkgs",
-                                       'poetry.lock' => $poetry_old }, 1],
-  ['JSON records saved as package-lock.json fail',
-                                     { 'package-lock.json' => "[\n$json_recs\n]\n" }, 0, 'looks like row-level data'],
+                                     { 'uv.lock' => $uv_big, 'sub/pixi.lock' => "version: 6\npackages:\n$yaml_pkgs" }, 1],
+  ['JSON records saved as uv.lock fail',
+                                     { 'uv.lock' => "[\n$json_recs\n]\n" }, 0, 'looks like row-level data'],
   ['JSON records with a lock file\'s first lines fail',
-                                     { 'package-lock.json' => "$npm_start  \"packages\": [\n$json_recs\n  ]\n}\n" }, 0, 'looks like row-level data'],
-  ['YAML records saved as conda-lock.yml fail',
-                                     { 'sub/conda-lock.yml' => "package:\n$yaml_recs" }, 0, 'looks like row-level data'],
+                                     { 'uv.lock' => "version = 1\n[\n$json_recs\n]\n" }, 0, 'looks like row-level data'],
+  ['YAML records saved as pixi.lock fail',
+                                     { 'sub/pixi.lock' => "version: 6\npackages:\n$yaml_recs" }, 0, 'looks like row-level data'],
+  # Only uv.lock and pixi.lock get the allowance: other names get every check,
+  # even with uv-form checksums.
+  ['an npm lock file gets every check',
+                                     { 'package-lock.json' => $uv_big }, 0, 'looks like row-level data'],
+  ['a composer lock file gets every check',
+                                     { 'composer.lock' => $uv_big }, 0, 'looks like row-level data'],
+  ['a conda-lock file gets every check',
+                                     { 'conda-lock.yml' => "package:\n$yaml_pkgs" }, 0, 'looks like row-level data'],
+  ['records with a hashed ID under a lock file name fail',
+                                     { 'uv.lock' => "version = 1\n[\n$hashed_json\n]\n" }, 0, 'looks like row-level data'],
+  ['one package checksum per three records fails',
+                                     { 'uv.lock' => $uv_thin }, 0, 'looks like row-level data'],
+  ['hashed IDs written sha256:<hex> do not count',
+                                     { 'uv.lock' => "version = 1\n[\n$prefixed_json\n]\n" }, 0, 'looks like row-level data'],
+  ['hashed IDs written sha256:<hex> in YAML do not count',
+                                     { 'pixi.lock' => "version: 6\npackages:\n$prefixed_yaml" }, 0, 'looks like row-level data'],
+  ['a hash = "sha256:<hex>" key ending in hash does not count',
+                                     { 'uv.lock' => "version = 1\nrows = [\n$prefixed_toml\n]\n" }, 0, 'looks like row-level data'],
+  ['pixi sha256 lines count as package checksums',
+                                     { 'pixi.lock' => "version: 6\npackages:\n$pixi_pkgs" }, 1],
+  ['one record past 1 in 2 fails',
+                                     { 'uv.lock' => $uv_short }, 0, 'looks like row-level data'],
+  ['a dotted key ending in hash does not count',
+                                     { 'uv.lock' => "version = 1\nrows = [\n$oneline_toml\n]\n" }, 0, 'looks like row-level data'],
+  ['a JSON "hash" key does not count',
+                                     { 'uv.lock' => "version = 1\n[\n$hash_json\n]\n" }, 0, 'looks like row-level data'],
+  ['uv form without sha256: does not count',
+                                     { 'uv.lock' => "version = 1\nrows = [\n$bare_uv\n]\n" }, 0, 'looks like row-level data'],
+  ['a sha256 key starting a YAML record does not count',
+                                     { 'pixi.lock' => "version: 6\npackages:\n$dash_yaml" }, 0, 'looks like row-level data'],
+  ['a quoted JSON sha256 key does not count',
+                                     { 'pixi.lock' => "version: 6\n[\n$json_sha_key\n]\n" }, 0, 'looks like row-level data'],
+  ['a sha256 line with more on it does not count',
+                                     { 'pixi.lock' => "version: 6\npackages:\n$trailing_yaml" }, 0, 'looks like row-level data'],
+  ['pixi references with Windows line endings are not records',
+                                     { 'pixi.lock' => ("version: 6\nenvironments:\n  e1:\n    packages:\n      linux-64:\n" . join('', map { "      - conda: https://conda.example.org/p$_-1.0.conda\n" } 1 .. 250)) =~ s/\n/\r\n/gr }, 1],
+  ['uv git dependencies count by their commit',
+                                     { 'uv.lock' => $uv_head . join('', map { "\n[[package]]\nname = \"g$_\"\nversion = \"1.0\"\nsource = { git = \"https://github.com/example/g$_?rev=main#" . substr($sha, 0, 40) . "\" }\ndependencies = [\n    { name = \"a\" },\n    { name = \"b\" },\n    { name = \"c\" },\n]\n" } 1 .. 120) }, 1],
+  ['an MRN-like hit in a uv.lock gets the lock-file note',
+                                     { 'uv.lock' => "$uv_head\n[[package]]\nname = \"tz\"\nversion = \"$day\"\n" }, 0, 'never add phi-ok to it'],
+  ['a uv.lock that starts another way gets the record counts',
+                                     { 'uv.lock' => "# note\n$uv_big" }, 0, 'looks like row-level data'],
+  ['a pixi.lock that starts another way gets the record counts',
+                                     { 'pixi.lock' => "packages:\n$pixi_pkgs" }, 0, 'looks like row-level data'],
+  ['uv git commits must be the full 40 hex',
+                                     { 'uv.lock' => $uv_head . join('', map { "\n[[package]]\nname = \"g$_\"\nversion = \"1.0\"\nsource = { git = \"https://github.com/example/g$_?rev=main#" . substr($sha, 0, 7) . "\" }\ndependencies = [\n    { name = \"a\" },\n    { name = \"b\" },\n    { name = \"c\" },\n]\n" } 1 .. 120) }, 0, 'looks like row-level data'],
+  ['pixi md5 lines must be exactly 32 hex',
+                                     { 'pixi.lock' => "version: 6\npackages:\n" . join('', map { "- name: p$_\n  md5: $sha\n" } 1 .. 250) }, 0, 'looks like row-level data'],
+  ['other refused files get no lock-file note',
+                                     { 'results/rows.json' => "[\n$json_recs\n]\n", 'results.lock' => "[\n$json_recs\n]\n" }, 0, 'looks like row-level data', 'A lock file:'],
+  ['the lock-file note comes once, after the file\'s last finding',
+                                     { 'poetry.lock' => $uv_big =~ s/name = "p1"/name = "p$mrn"/r },
+                                     0, qr/MRN-like[^\n]*\n  poetry\.lock: [^\n]*row-level[^\n]*\n    \(A lock file:(?![\s\S]*A lock file:)/],
+  ['each refused lock file gets its own note',
+                                     { 'poetry.lock' => $uv_big, 'sub/pdm.lock' => $uv_big },
+                                     0, qr/lock: [^\n]*\n    \(A lock file:[\s\S]*lock: [^\n]*\n    \(A lock file:/],
+  ['a refused pixi.lock gets the lock-file note',
+                                     { 'pixi.lock' => "version: 6\npackages:\n- conda: https://conda.example.org/libx-$day.0-0.conda\n" }, 0, 'never add phi-ok to it'],
+  ['a refused package-lock.json gets the lock-file note',
+                                     { 'package-lock.json' => "{\n  \"note\": \"$mrn\"\n}\n" }, 0, 'never add phi-ok to it'],
+  ['a longer name or another letter case gets no lock-file note',
+                                     { 'results/myuv.lock' => "[\n$json_recs\n]\n", 'UV.LOCK' => "[\n$json_recs\n]\n" }, 0, 'looks like row-level data', 'A lock file:'],
+  ['pixi sha256 lines must be exactly 64 hex',
+                                     { 'pixi.lock' => "version: 6\npackages:\n" . join('', map { "- name: p$_\n  sha256: " . substr($sha, 0, 40) . "\n" } 1 .. 250) }, 0, 'looks like row-level data'],
+  ['pixi pypi references are not records',
+                                     { 'pixi.lock' => "version: 6\nenvironments:\n  e1:\n    packages:\n      linux-64:\n" . join('', map { "      - pypi: https://files.example.org/p$_-1.0.whl\n" } 1 .. 250) }, 1],
+  ['pixi checksum lines with Windows line endings count',
+                                     { 'pixi.lock' => "version: 6\npackages:\n$pixi_pkgs" =~ s/\n/\r\n/gr }, 1],
+  ['a git line without uv\'s source = { git = form does not count',
+                                     { 'uv.lock' => $uv_head . join('', map { "\n[[package]]\nname = \"g$_\"\nversion = \"1.0\"\nnote = \"https://github.com/example/g$_#" . substr($sha, 0, 40) . "\"\ndependencies = [\n    { name = \"a\" },\n    { name = \"b\" },\n    { name = \"c\" },\n]\n" } 1 .. 120) }, 0, 'looks like row-level data'],
+  ['the footer says assistants add phi-ok only as AGENTS.md allows',
+                                     { 'docs/notes.md' => "size = $mrn\n" }, 0, 'only as AGENTS.md allows'],
+  ['phi-ok on a line skips the PHI patterns on that line',
+                                     { 'docs/notes.md' => "size = $mrn <!-- phi-ok -->\n" }, 1],
+  ['the lock-file note links the template README',
+                                     { 'poetry.lock' => $uv_big }, 0, 'project-template#lock-files-and-the-phi-check'],
+  ['every known lock-file name gets the note',
+                                     { map { ($_ => "{\n  \"note\": \"$mrn\"\n}\n") } qw(composer.lock Pipfile.lock yarn.lock Cargo.lock Gemfile.lock mix.lock flake.lock bun.lock npm-shrinkwrap.json packages.lock.json pnpm-lock.yaml conda-lock.yml) },
+                                     0, qr/(?:\(A lock file:[\s\S]*){12}/],
+  ['renv.lock URL lines inside Packages are checked',
+                                     { 'renv.lock' => $renv_ok =~ s/      "Version": "1\.0",/      "Version": "1.0",\n      "x": [\n        "URL": "https:\/\/example.org\/$iso"\n      ],/r }, 0, 'full date'],
+  # renv.lock: package descriptions and repository addresses pass; nothing else.
+  ['renv.lock package descriptions and snapshot URLs pass',
+                                     { 'renv.lock' => $renv_ok, 'sub/renv.lock' => $renv_ok =~ s/\n/\r\n/gr }, 1],
+  ['renv.lock that starts another way gets every check',
+                                     { 'renv.lock' => "\n$renv_ok" }, 0, 'MRN-like'],
+  ['renv package text under another name gets every check',
+                                     { 'renv.lock.bak' => $renv_ok, 'renv.json' => $renv_ok }, 0, 'MRN-like'],
+  ['renv.lock MRN in a key fails',   { 'renv.lock' => $renv_ok =~ s/"Hash"/"$mrn"/r }, 0, 'MRN-like'],
+  ['renv.lock MRN in the header fails',
+                                     { 'renv.lock' => $renv_ok =~ s/"Version": "4\.4\.2"/"Version": "$mrn"/r }, 0, 'MRN-like'],
+  ['renv.lock text at another depth gets every check',
+                                     { 'renv.lock' => $renv_ok =~ s/^      "Description"/        "Description"/mr }, 0, 'MRN-like'],
+  ['renv.lock MRN in an array fails', { 'renv.lock' => $renv_ok =~ s/        "R"\n/        "$mrn"\n/r }, 0, 'MRN-like'],
+  ['renv.lock header URL that is not a web address fails',
+                                     { 'renv.lock' => $renv_ok =~ s{"https://packagemanager\.posit\.co/cran/$iso"}{"$mrn"}r }, 0, 'MRN-like'],
+  ['renv.lock text after the Packages section fails',
+                                     { 'renv.lock' => $renv_ok =~ s/\}\n\}\n$/},\n  "Notes": {\n      "x": "$mrn"\n  }\n}\n/r }, 0, 'MRN-like'],
+  ['renv.lock with only the first line wrong gets every check',
+                                     { 'renv.lock' => $renv_ok =~ s/^\{/[/r }, 0, 'MRN-like'],
+  ['renv.lock with only the second line wrong gets every check',
+                                     { 'renv.lock' => $renv_ok =~ s/^  "R": \{/  "r": {/mr }, 0, 'MRN-like'],
+  ['RENV.lock gets every check',     { 'RENV.lock' => $renv_ok }, 0, 'MRN-like'],
+  ['myrenv.lock gets every check',   { 'myrenv.lock' => $renv_ok }, 0, 'MRN-like'],
+  ['renv.lock local install folder is checked',
+                                     { 'renv.lock' => $renv_ok =~ s/      "Version": "1\.0",/      "Version": "1.0",\n      "RemoteUrl": "\/home\/ann\/MRN_$mrn\/pkg",/r }, 0, 'MRN-like'],
+  ['renv.lock text value with an escaped quote is blanked whole',
+                                     { 'renv.lock' => $renv_ok =~ s/See doi/See \\"x\\" doi/r }, 1],
+  ['renv.lock header URL at another depth is checked',
+                                     { 'renv.lock' => $renv_ok =~ s/        "URL": "https/      "URL": "https/r }, 0, 'full date'],
+  ['renv.lock header field other than URL is checked',
+                                     { 'renv.lock' => $renv_ok =~ s/        "URL": "https/        "Site": "https/r }, 0, 'full date'],
+  ['renv.lock header URL with a login is checked',
+                                     { 'renv.lock' => $renv_ok =~ s{https://packagemanager}{https://$email/packagemanager}r }, 0, 'email'],
+  ['renv.lock http header URL is checked',
+                                     { 'renv.lock' => $renv_ok =~ s{"https://packagemanager}{"http://packagemanager}r }, 0, 'full date'],
+  ['renv.lock URL lines after the Packages section are checked',
+                                     { 'renv.lock' => $renv_ok =~ s/\}\n\}\n$/},\n  "Notes": [\n      {\n        "URL": "https:\/\/example.org\/$iso"\n      }\n  ]\n}\n/r }, 0, 'full date'],
+  ['renv.lock local paths are checked whatever the key',
+                                     { 'renv.lock' => $renv_ok =~ s/      "Version": "1\.0",/      "Version": "1.0",\n      "RemotePkgRef": "local::\/home\/ann\/MRN_$mrn\/pkg",/r }, 0, 'MRN-like'],
+  ['renv.lock Windows paths are checked whatever the key',
+                                     { 'renv.lock' => $renv_ok =~ s/      "Version": "1\.0",/      "Version": "1.0",\n      "Source": "C:\\\\Users\\\\ann\\\\$mrn",/r }, 0, 'MRN-like'],
+  ['renv.lock: a relative RemoteUrl is checked, with the lock-file note',
+                                     { 'renv.lock' => $renv_ok =~ s{      "Version": "1\.0",}{      "Version": "1.0",\n      "RemoteUrl": "pkgs/MRN_$mrn",}r }, 0, qr/MRN-like[\s\S]*never add phi-ok to it/],
+  ['renv.lock: a / path is checked',
+                                     { 'renv.lock' => $renv_ok =~ s{      "Version": "1\.0",}{      "Version": "1.0",\n      "RemotePkgRef": "/home/a/$mrn",}r }, 0, 'MRN-like'],
+  ['renv.lock: a ~ path is checked',
+                                     { 'renv.lock' => $renv_ok =~ s{      "Version": "1\.0",}{      "Version": "1.0",\n      "RemotePkgRef": "~/a/$mrn",}r }, 0, 'MRN-like'],
+  ['renv.lock: a file: path is checked',
+                                     { 'renv.lock' => $renv_ok =~ s{      "Version": "1\.0",}{      "Version": "1.0",\n      "RemotePkgRef": "file:///a/$mrn",}r }, 0, 'MRN-like'],
+  ['renv.lock: a network share is checked',
+                                     { 'renv.lock' => $renv_ok =~ s{      "Version": "1\.0",}{      "Version": "1.0",\n      "RemotePkgRef": "\\\\srv\\\\a\\\\$mrn",}r }, 0, 'MRN-like'],
+  ['records saved as renv.lock with renv header still fail',
+                                     { 'renv.lock' => "$renv_head  \"Packages\": [\n$json_recs\n  ]\n}\n" }, 0, 'looks like row-level data'],
+  ['provenance tokens do not count as package checksums',
+                                     { 'uv.lock' => "version = 1\n[\n$token_json\n]\n" }, 0, 'looks like row-level data'],
+  ['only uv.lock and pixi.lock, by exact name, get the allowance',
+                                     { 'renv.lock' => $uv_big }, 0, 'looks like row-level data'],
+  ['a longer name ending in uv.lock gets every check',
+                                     { 'myuv.lock' => $uv_big }, 0, 'looks like row-level data'],
+  ['a copy named uv.lock.bak gets every check',
+                                     { 'uv.lock.bak' => $uv_big }, 0, 'looks like row-level data'],
+  ['a dotted key ending in a checksum name does not count',
+                                     { 'uv.lock' => "version = 1\n[\n$hashed_dots\n]\n" }, 0, 'looks like row-level data'],
+  ['a key ending in a checksum name does not count',
+                                     { 'sub/pixi.lock' => "version: 6\npackages:\n$hashed_yaml" }, 0, 'looks like row-level data'],
   ['records with too few checksums fail',
-                                     { 'renv.lock' => "{\n  \"Hash\": \"$sha\",\n  \"x\": [\n$json_recs\n]}\n" }, 0, 'looks like row-level data'],
+                                     { 'uv.lock' => "version = 1\nsdist = { hash = \"sha256:$sha\" }\n[\n$json_recs\n]\n" }, 0, 'looks like row-level data'],
   ['checksums all on one line do not count',
-                                     { 'renv.lock' => "{\n  \"note\": \"" . join(' ', (substr($sha, 0, 32)) x 150) . "\",\n  \"x\": [\n$json_recs\n]}\n" }, 0, 'looks like row-level data'],
+                                     { 'uv.lock' => "version = 1\nnote = [" . join(' ', ("{ hash = \"sha256:$sha\" }") x 150) . "]\n[\n$json_recs\n]\n" }, 0, 'looks like row-level data'],
   ['HTML table rows under a lock file name fail',
                                      { 'uv.lock' => "version = 1\n# $sha\n<table>\n" . join('', map { "<tr><td>p$_</td></tr>\n<!-- $sha -->\n" } 1 .. 250) . "</table>\n" }, 0, 'HTML table rows'],
   ['pixi environment references are not records',
                                      { 'pixi.lock' => "version: 6\nenvironments:\n" . join('', map { my $e = $_; "  e$e:\n    packages:\n      linux-64:\n" . join('', map { "      - conda: https://conda.example.org/p$_-1.0.conda\n" } 1 .. 60) } 1 .. 5) . "packages:\n- conda: https://conda.example.org/p1-1.0.conda\n  sha256: $sha\n" }, 1],
   ['a lock file name in other case gets the record counts',
-                                     { 'PACKAGE-LOCK.JSON' => "$npm_start  \"packages\": [\n$json_pkgs\n  ]\n}\n" }, 0, 'looks like row-level data'],
+                                     { 'UV.LOCK' => $uv_big }, 0, 'looks like row-level data'],
   ['sizes in other files fail',      { 'docs/notes.md' => "size = $mrn\n", 'results/out.yml' => "  timestamp: $mrn\n" }, 0, 'MRN-like'],
 );
 
 my ($pass, $fail) = (0, 0);
 for my $c (@cases) {
-  my ($name, $files, $want, $msg) = @$c;
+  # $msg: text (or a qr// pattern) the message must hold; $not: text it must not.
+  my ($name, $files, $want, $msg, $not) = @$c;
   my $dir = tempdir(CLEANUP => 1);
   run($dir, 'git', 'init', '-q');
   mkdir "$dir/tools";
@@ -182,9 +361,10 @@ for my $c (@cases) {
   run($dir, 'git', 'add', '-A');
   my $out = `cd "$dir" && perl tools/phi_guard.pl --all 2>&1`;
   my $ok = $? == 0 ? 1 : 0;
-  my $good = $ok == $want && (!defined $msg || index($out, $msg) >= 0);
+  my $good = $ok == $want && (!defined $msg || (ref $msg ? $out =~ $msg : index($out, $msg) >= 0))
+             && (!defined $not || index($out, $not) < 0);
   if ($good) { $pass++; print "ok   $name\n" }
-  else { $fail++; print "FAIL $name (exit " . ($ok ? 0 : 1) . ")\n" . ($out =~ s/^/     /mgr) }
+  else { $fail++; print "FAIL $name (exit " . ($ok ? 0 : 1) . ")\n" . ($out =~ s/^/     /mgr) . ($out =~ /\n\z/ ? '' : "\n") }
 }
 print "\n$pass passed, $fail failed\n";
 exit($fail ? 1 : 0);

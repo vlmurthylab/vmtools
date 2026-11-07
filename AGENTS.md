@@ -60,3 +60,4 @@ At the start of a session, turn the hook on: `git config core.hooksPath hooks` (
 - **Default branch:** `master` (where the checklist above says `main`).
 - **How to run:** `devtools::test()` and `devtools::check()`; rebuild `R/sysdata.rda` with `data-raw/build_sysdata.R` only when the source tables change. Lab-core files (`hooks/`, `tools/`, `AGENTS.md`, `CLAUDE.md`, `phi-guard.conf`, `.gitattributes`) are in `.Rbuildignore` so they stay out of the package.
 - **Status:** v0.2.0 released (Zenodo DOI in the README). License stays GPL-3.0-only.
+- **Approved in advance for `phi-ok`:** none. (The maintainer's email in `DESCRIPTION`, which R requires, carries one, approved individually.)
